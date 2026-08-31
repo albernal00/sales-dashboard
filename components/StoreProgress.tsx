@@ -77,7 +77,7 @@ export default function StoreProgress({ stores }: StoreProgressProps) {
                   </td>
 
                   <td className="whitespace-nowrap py-4 text-slate-600">
-                    <span className="inline-flex items-center gap-2"><span className="flex size-6 items-center justify-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-600">{store.staffName.slice(0, 1)}</span>{store.staffName}</span>
+                    {store.staffName}
                   </td>
                 </tr>
               );

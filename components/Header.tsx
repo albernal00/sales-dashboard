@@ -3,21 +3,24 @@ import {
   RefreshCw,
   User,
   ChevronDown,
-  BarChart3,
 } from "lucide-react";
+import MobileSidebar from "./MobileSidebar";
 
 export default function Header() {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-[#101b36] text-white lg:hidden">
-          <BarChart3 size={20} aria-hidden="true" />
-        </div>
+        <MobileSidebar />
         <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-          ダッシュボード
-        </h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+            ダッシュボード
+          </h1>
+          <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+            デモデータを使用しています
+          </span>
+        </div>
 
         <p className="mt-0.5 hidden text-xs text-slate-500 sm:block">
           営業実績・報酬進捗を確認できます

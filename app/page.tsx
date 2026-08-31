@@ -4,8 +4,26 @@ import StoreProgress from "../components/StoreProgress";
 import StaffRanking from "../components/StaffRanking";
 import Header from "../components/Header";
 import { BadgeJapaneseYen, ChartNoAxesCombined, Target, Trophy } from "lucide-react";
+import { rewards } from "@/data/rewards";
+import { staff, staffPerformances } from "@/data/staff";
+import { stores } from "@/data/stores";
+import {
+  calculateDashboardKpis,
+  createStaffRanking,
+  createStoreProgressRows,
+} from "@/lib/dashboard";
+import {
+  formatCount,
+  formatCurrency,
+  formatPercent,
+  formatSignedCount,
+} from "@/lib/formatters";
 
 export default function Home() {
+  const kpis = calculateDashboardKpis(stores, rewards);
+  const storeRows = createStoreProgressRows(stores, staff);
+  const staffRanking = createStaffRanking(staff, staffPerformances, rewards);
+
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
       <Sidebar />
@@ -18,23 +36,23 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
             <KpiCard
               title="今月実績"
-              value="27件"
-              subtext="先月比 +18件"
+              value={formatCount(kpis.actual)}
+              subtext={`先月比 ${formatSignedCount(kpis.previousMonthDifference)}`}
               icon={ChartNoAxesCombined}
               tone="blue"
             />
 
             <KpiCard
               title="目標件数"
-              value="35件"
-              subtext="残り8件"
+              value={formatCount(kpis.target)}
+              subtext={`残り${formatCount(kpis.remaining)}`}
               icon={Target}
               tone="violet"
             />
 
             <KpiCard
               title="達成率"
-              value="77.1%"
+              value={formatPercent(kpis.achievementRate)}
               subtext="今月目標"
               icon={Trophy}
               tone="amber"
@@ -42,7 +60,7 @@ export default function Home() {
 
             <KpiCard
               title="報酬見込"
-              value="487,266円"
+              value={formatCurrency(kpis.expectedReward)}
               subtext="確定 + 未確定"
               icon={BadgeJapaneseYen}
               tone="emerald"
@@ -51,10 +69,10 @@ export default function Home() {
 
           <div className="mt-5 grid gap-5 2xl:grid-cols-3">
             <div className="min-w-0 2xl:col-span-2">
-              <StoreProgress />
+              <StoreProgress stores={storeRows} />
             </div>
 
-            <StaffRanking />
+            <StaffRanking staff={staffRanking} />
           </div>
           </div>
         </main>

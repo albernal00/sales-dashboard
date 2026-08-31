@@ -1,11 +1,11 @@
-const staff = [
-  { name: "土田", count: 13, reward: 285000 },
-  { name: "大森", count: 8, reward: 164000 },
-  { name: "田中", count: 4, reward: 82000 },
-  { name: "山田", count: 2, reward: 41000 },
-];
+import { formatCount, formatCurrency } from "@/lib/formatters";
+import type { StaffRankingRow } from "@/types/dashboard";
 
-export default function StaffRanking() {
+type StaffRankingProps = {
+  staff: StaffRankingRow[];
+};
+
+export default function StaffRanking({ staff }: StaffRankingProps) {
   return (
     <section className="h-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
@@ -33,13 +33,13 @@ export default function StaffRanking() {
                   {person.name}
                 </p>
                 <p className="mt-0.5 text-[11px] text-slate-400">
-                  {person.count}件
+                  {formatCount(person.count)}
                 </p>
               </div>
             </div>
 
             <p className="text-sm font-bold tabular-nums text-slate-800">
-              ¥{person.reward.toLocaleString()}
+              {formatCurrency(person.reward, "symbol")}
             </p>
           </div>
         ))}

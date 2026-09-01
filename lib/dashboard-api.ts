@@ -1,5 +1,6 @@
 import "server-only";
 
+import { connection } from "next/server";
 import { rewards as fallbackRewards } from "@/data/rewards";
 import { staff as fallbackStaff } from "@/data/staff";
 import { stores as fallbackStores } from "@/data/stores";
@@ -12,10 +13,42 @@ import type {
 } from "@/types/dashboard";
 
 const TARGET_MONTH = "2026-09";
-const REVALIDATE_SECONDS = 300;
 const FALLBACK_UPDATED_AT = "2026-08-31T17:50:00+09:00";
 
 type UnknownRecord = Record<string, unknown>;
+
+type DiagnosticValue = string | number | boolean;
+
+class DashboardApiError extends Error {
+  constructor(
+    readonly code: string,
+    readonly details: Record<string, DiagnosticValue> = {}
+  ) {
+    super(code);
+    this.name = "DashboardApiError";
+  }
+}
+
+function logFallback(
+  reason: string,
+  details: Record<string, DiagnosticValue> = {}
+) {
+  console.error("[dashboard-api] fallback", { reason, ...details });
+}
+
+function logValidationResult(
+  section: string,
+  receivedCount: number,
+  acceptedCount: number
+) {
+  if (receivedCount !== acceptedCount) {
+    console.warn("[dashboard-api] validation_warning", {
+      section,
+      receivedCount,
+      acceptedCount,
+    });
+  }
+}
 
 function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -37,9 +70,9 @@ function getNumber(record: UnknownRecord, keys: string[]): number | undefined {
 }
 
 function normalizeStores(value: unknown): StorePerformance[] {
-  if (!Array.isArray(value)) throw new Error("Invalid stores");
+  if (!Array.isArray(value)) throw new DashboardApiError("STORES_NOT_ARRAY");
 
-  return value.flatMap((item, index) => {
+  const stores = value.flatMap((item, index) => {
     if (!isRecord(item)) return [];
 
     const name = getString(item, ["name", "storeName"]);
@@ -58,12 +91,21 @@ function normalizeStores(value: unknown): StorePerformance[] {
       staffId: getString(item, ["staffId", "assignedStaffId"]) ?? "",
     }];
   });
+
+  logValidationResult("stores", value.length, stores.length);
+  if (value.length > 0 && stores.length === 0) {
+    throw new DashboardApiError("STORES_NO_VALID_ROWS", {
+      receivedCount: value.length,
+    });
+  }
+
+  return stores;
 }
 
 function normalizeStaff(value: unknown): Staff[] {
-  if (!Array.isArray(value)) throw new Error("Invalid staff");
+  if (!Array.isArray(value)) throw new DashboardApiError("STAFF_NOT_ARRAY");
 
-  return value.flatMap((item, index) => {
+  const staff = value.flatMap((item, index) => {
     if (!isRecord(item)) return [];
 
     const name = getString(item, ["name", "staffName"]);
@@ -78,6 +120,15 @@ function normalizeStaff(value: unknown): Staff[] {
       personalActual,
     }];
   });
+
+  logValidationResult("staff", value.length, staff.length);
+  if (value.length > 0 && staff.length === 0) {
+    throw new DashboardApiError("STAFF_NO_VALID_ROWS", {
+      receivedCount: value.length,
+    });
+  }
+
+  return staff;
 }
 
 function normalizeRewardEntries(value: unknown): Reward[] {
@@ -125,11 +176,25 @@ function normalizeRewardEntries(value: unknown): Reward[] {
 
 function normalizeRewards(value: unknown): Reward[] {
   const entries = normalizeRewardEntries(value);
-  if (entries.length > 0 || Array.isArray(value)) return entries;
-  if (!isRecord(value)) throw new Error("Invalid rewards");
+  if (Array.isArray(value)) {
+    logValidationResult("rewards", value.length, entries.length);
+    if (value.length > 0 && entries.length === 0) {
+      throw new DashboardApiError("REWARDS_NO_VALID_ROWS", {
+        receivedCount: value.length,
+      });
+    }
+    return entries;
+  }
+  if (!isRecord(value)) throw new DashboardApiError("REWARDS_INVALID");
 
   const byStaff = normalizeRewardEntries(value.byStaff);
   if (byStaff.length > 0) return byStaff;
+
+  const hasConfirmed = getNumber(value, ["confirmed"]) !== undefined;
+  const hasPending = getNumber(value, ["pending"]) !== undefined;
+  if (!hasConfirmed && !hasPending) {
+    throw new DashboardApiError("REWARDS_TOTALS_MISSING");
+  }
 
   return [
     {
@@ -148,11 +213,19 @@ function normalizeRewards(value: unknown): Reward[] {
 }
 
 function normalizeResponse(value: unknown): DashboardData {
-  if (!isRecord(value)) throw new Error("Invalid response");
+  if (!isRecord(value)) throw new DashboardApiError("RESPONSE_NOT_OBJECT");
 
   const response = value as Partial<GasDashboardResponse>;
-  if (response.status !== "success" && response.status !== "warning") {
-    throw new Error("API status is not usable");
+  if (
+    response.status !== "ok" &&
+    response.status !== "success" &&
+    response.status !== "warning"
+  ) {
+    const receivedStatus =
+      typeof response.status === "string" && /^[a-z_-]{1,30}$/i.test(response.status)
+        ? response.status
+        : "invalid_or_missing";
+    throw new DashboardApiError("STATUS_NOT_USABLE", { receivedStatus });
   }
 
   return {
@@ -186,20 +259,82 @@ function getFallbackData(): DashboardData {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
+  await connection();
+
   const apiUrl = process.env.GAS_DASHBOARD_API_URL;
-  if (!apiUrl) return getFallbackData();
+  if (!apiUrl) {
+    logFallback("ENV_MISSING");
+    return getFallbackData();
+  }
+
+  let url: URL;
+  try {
+    url = new URL(apiUrl);
+    url.searchParams.set("month", TARGET_MONTH);
+  } catch {
+    logFallback("URL_INVALID");
+    return getFallbackData();
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      cache: "no-store",
+      redirect: "follow",
+    });
+  } catch (error) {
+    logFallback("NETWORK_ERROR", {
+      errorType: error instanceof Error ? error.name : "unknown",
+    });
+    return getFallbackData();
+  }
+
+  if (response.redirected) {
+    console.info("[dashboard-api] redirect_followed", {
+      httpStatus: response.status,
+    });
+  }
+
+  if (!response.ok) {
+    logFallback("HTTP_ERROR", {
+      httpStatus: response.status,
+      redirected: response.redirected,
+    });
+    return getFallbackData();
+  }
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    logFallback("JSON_PARSE_ERROR", {
+      httpStatus: response.status,
+      redirected: response.redirected,
+      contentTypeIsJson:
+        response.headers.get("content-type")?.includes("application/json") ?? false,
+    });
+    return getFallbackData();
+  }
 
   try {
-    const url = new URL(apiUrl);
-    url.searchParams.set("month", TARGET_MONTH);
-
-    const response = await fetch(url, {
-      next: { revalidate: REVALIDATE_SECONDS },
-    });
-    if (!response.ok) throw new Error("GAS request failed");
-
-    return normalizeResponse(await response.json());
-  } catch {
+    const data = normalizeResponse(payload);
+    if (data.status === "warning") {
+      console.warn("[dashboard-api] api_warning", {
+        warningCount: data.warnings.length,
+        storeCount: data.stores.length,
+        staffCount: data.staff.length,
+        rewardCount: data.rewards.length,
+      });
+    }
+    return data;
+  } catch (error) {
+    if (error instanceof DashboardApiError) {
+      logFallback(error.code, error.details);
+    } else {
+      logFallback("VALIDATION_UNKNOWN_ERROR", {
+        errorType: error instanceof Error ? error.name : "unknown",
+      });
+    }
     return getFallbackData();
   }
 }

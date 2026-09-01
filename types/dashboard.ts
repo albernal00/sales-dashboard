@@ -42,7 +42,7 @@ export type StaffRankingRow = Staff & {
   reward: number;
 };
 
-export type GasDashboardStatus = "success" | "warning";
+export type GasDashboardStatus = "ok" | "success" | "warning";
 
 export type GasDashboardResponse = {
   status: GasDashboardStatus;

@@ -5,8 +5,19 @@ import {
   ChevronDown,
 } from "lucide-react";
 import MobileSidebar from "./MobileSidebar";
+import { formatTargetMonth, formatUpdatedAt } from "@/lib/formatters";
 
-export default function Header() {
+type HeaderProps = {
+  targetMonth: string;
+  updatedAt: string;
+  isFallback: boolean;
+};
+
+export default function Header({
+  targetMonth,
+  updatedAt,
+  isFallback,
+}: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4">
@@ -17,9 +28,11 @@ export default function Header() {
           <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
             ダッシュボード
           </h1>
-          <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
-            デモデータを使用しています
-          </span>
+          {isFallback && (
+            <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+              デモデータを表示しています
+            </span>
+          )}
         </div>
 
         <p className="mt-0.5 hidden text-xs text-slate-500 sm:block">
@@ -38,10 +51,8 @@ export default function Header() {
           />
 
           <span className="sr-only">対象月</span>
-          <select className="cursor-pointer appearance-none bg-transparent pr-4 text-xs font-semibold text-slate-700 outline-none sm:text-sm">
-            <option>2026年8月</option>
-            <option>2026年7月</option>
-            <option>2026年6月</option>
+          <select defaultValue={targetMonth} className="cursor-pointer appearance-none bg-transparent pr-4 text-xs font-semibold text-slate-700 outline-none sm:text-sm">
+            <option value={targetMonth}>{formatTargetMonth(targetMonth)}</option>
           </select>
         </label>
 
@@ -55,7 +66,7 @@ export default function Header() {
             </p>
 
             <p className="text-[11px] font-semibold text-slate-600">
-              2026/08/31 17:50
+              {formatUpdatedAt(updatedAt)}
             </p>
           </div>
         </button>

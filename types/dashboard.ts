@@ -1,6 +1,7 @@
 export type Staff = {
   id: string;
   name: string;
+  personalActual: number;
 };
 
 export type StorePerformance = {
@@ -10,11 +11,6 @@ export type StorePerformance = {
   actual: number;
   previousActual: number;
   staffId: string;
-};
-
-export type StaffPerformance = {
-  staffId: string;
-  count: number;
 };
 
 export type RewardStatus = "confirmed" | "pending";
@@ -44,4 +40,29 @@ export type StoreProgressRow = StorePerformance & {
 export type StaffRankingRow = Staff & {
   count: number;
   reward: number;
+};
+
+export type GasDashboardStatus = "success" | "warning";
+
+export type GasDashboardResponse = {
+  status: GasDashboardStatus;
+  targetMonth: string;
+  stores: unknown[];
+  staff: unknown[];
+  rewards: unknown[] | Record<string, unknown>;
+  warnings: unknown[];
+  sourceHealth: unknown;
+  updatedAt: string;
+};
+
+export type DashboardData = {
+  status: GasDashboardStatus;
+  targetMonth: string;
+  stores: StorePerformance[];
+  staff: Staff[];
+  rewards: Reward[];
+  warnings: string[];
+  sourceHealth: unknown;
+  updatedAt: string;
+  isFallback: boolean;
 };

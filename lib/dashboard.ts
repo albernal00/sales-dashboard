@@ -2,7 +2,6 @@ import type {
   DashboardKpis,
   Reward,
   Staff,
-  StaffPerformance,
   StaffRankingRow,
   StorePerformance,
   StoreProgressRow,
@@ -61,12 +60,8 @@ export function createStoreProgressRows(
 
 export function createStaffRanking(
   staff: Staff[],
-  performances: StaffPerformance[],
   rewards: Reward[]
 ): StaffRankingRow[] {
-  const counts = new Map(
-    performances.map((performance) => [performance.staffId, performance.count])
-  );
   const rewardTotals = rewards.reduce<Map<string, number>>((totals, reward) => {
     totals.set(reward.staffId, (totals.get(reward.staffId) ?? 0) + reward.amount);
     return totals;
@@ -75,7 +70,7 @@ export function createStaffRanking(
   return staff
     .map((person) => ({
       ...person,
-      count: counts.get(person.id) ?? 0,
+      count: person.personalActual,
       reward: rewardTotals.get(person.id) ?? 0,
     }))
     .sort((a, b) => b.count - a.count || b.reward - a.reward);

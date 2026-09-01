@@ -4,9 +4,7 @@ import StoreProgress from "../components/StoreProgress";
 import StaffRanking from "../components/StaffRanking";
 import Header from "../components/Header";
 import { BadgeJapaneseYen, ChartNoAxesCombined, Target, Trophy } from "lucide-react";
-import { rewards } from "@/data/rewards";
-import { staff, staffPerformances } from "@/data/staff";
-import { stores } from "@/data/stores";
+import { getDashboardData } from "@/lib/dashboard-api";
 import {
   calculateDashboardKpis,
   createStaffRanking,
@@ -19,17 +17,31 @@ import {
   formatSignedCount,
 } from "@/lib/formatters";
 
-export default function Home() {
-  const kpis = calculateDashboardKpis(stores, rewards);
-  const storeRows = createStoreProgressRows(stores, staff);
-  const staffRanking = createStaffRanking(staff, staffPerformances, rewards);
+export default async function Home() {
+  const dashboardData = await getDashboardData();
+  const kpis = calculateDashboardKpis(
+    dashboardData.stores,
+    dashboardData.rewards
+  );
+  const storeRows = createStoreProgressRows(
+    dashboardData.stores,
+    dashboardData.staff
+  );
+  const staffRanking = createStaffRanking(
+    dashboardData.staff,
+    dashboardData.rewards
+  );
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header />
+        <Header
+          targetMonth={dashboardData.targetMonth}
+          updatedAt={dashboardData.updatedAt}
+          isFallback={dashboardData.isFallback}
+        />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1600px]">

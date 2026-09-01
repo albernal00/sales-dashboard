@@ -21,3 +21,24 @@ export function formatCurrency(
 export function formatPercent(value: number, fractionDigits = 1): string {
   return `${value.toFixed(fractionDigits)}%`;
 }
+
+export function formatUpdatedAt(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "更新時刻不明";
+
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Tokyo",
+  }).format(date);
+}
+
+export function formatTargetMonth(value: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  return match ? `${match[1]}年${Number(match[2])}月` : value;
+}

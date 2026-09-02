@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Store } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Search, Store } from "lucide-react";
 import {
   formatCount,
   formatPercent,
@@ -10,6 +11,7 @@ import type { StoreGoalStatus, StoreListRow } from "@/types/dashboard";
 
 type StoresTableProps = {
   stores: StoreListRow[];
+  targetMonth: string;
 };
 
 type SortKey = "actual" | "progress" | "remaining" | "name";
@@ -36,7 +38,7 @@ const statusStyles: Record<
   },
 };
 
-export default function StoresTable({ stores }: StoresTableProps) {
+export default function StoresTable({ stores, targetMonth }: StoresTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [staffFilter, setStaffFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("actual");
@@ -173,10 +175,29 @@ export default function StoresTable({ stores }: StoresTableProps) {
                   <tr
                     key={store.key}
                     data-store-key={store.key}
-                    className="transition hover:bg-slate-50/70"
+                    onClick={(event) => {
+                      const target = event.target as HTMLElement;
+                      if (target.closest("a, button, input, select, textarea")) return;
+                      event.currentTarget.querySelector<HTMLAnchorElement>("a")?.click();
+                    }}
+                    className="cursor-pointer transition hover:bg-slate-50/70"
                   >
                     <th scope="row" className="whitespace-nowrap px-6 py-4 text-left font-semibold text-slate-800">
-                      {store.name}
+                      <Link
+                        href={{
+                          pathname: `/stores/${encodeURIComponent(store.storeId)}`,
+                          query: { month: targetMonth },
+                        }}
+                        className="group inline-flex items-center gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                        aria-label={`${store.name}の案件一覧を表示`}
+                      >
+                        {store.name}
+                        <ChevronRight
+                          size={14}
+                          className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-500"
+                          aria-hidden="true"
+                        />
+                      </Link>
                     </th>
                     <td className="whitespace-nowrap px-4 py-4 text-slate-600">
                       {store.staffName}

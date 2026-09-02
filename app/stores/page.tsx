@@ -55,7 +55,10 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
                 </div>
               )}
 
-            <StoresTable stores={stores} />
+            <StoresTable
+              stores={stores}
+              targetMonth={dashboardData.targetMonth}
+            />
           </div>
         </main>
       </div>

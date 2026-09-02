@@ -7,6 +7,7 @@ import type {
   StaffRankingRow,
   StoreDetail,
   StoreListRow,
+  StoreRecordDetail,
   StorePerformance,
   StoreProgressRow,
 } from "@/types/dashboard";
@@ -94,7 +95,7 @@ export function createStoreListRows(
 ): StoreListRow[] {
   const progressRows = createStoreProgressRows(stores, staff);
 
-  return progressRows.map((row) => {
+  return progressRows.map((row, index) => {
     const goalStatus = !targetDataAvailable
       ? "unregistered"
       : row.target === 0
@@ -105,9 +106,92 @@ export function createStoreListRows(
 
     return {
       ...row,
+      storeId: stores[index].id,
       goalStatus,
     };
   });
+}
+
+export function createStoreRecordDetail(
+  storeId: string,
+  stores: StorePerformance[],
+  staff: Staff[],
+  rewards: Reward[],
+  targetMonth: string,
+  targetDataAvailable: boolean
+): StoreRecordDetail | undefined {
+  const storeIndex = stores.findIndex((candidate) => candidate.id === storeId);
+  if (storeIndex < 0) return undefined;
+
+  const summary = createStoreListRows(
+    [stores[storeIndex]],
+    staff,
+    targetDataAvailable
+  )[0];
+  const staffNames = new Map(staff.map((person) => [person.id, person.name]));
+  const groupedCases = new Map<
+    string,
+    {
+      applicationDate?: string;
+      staffId?: string;
+      productNames: Set<string>;
+      constructionDate?: string;
+      constructionDateNote?: string;
+    }
+  >();
+
+  for (const reward of rewards) {
+    if (reward.storeId !== storeId) continue;
+    if (
+      reward.applicationDate &&
+      /^\d{4}-\d{2}/.test(reward.applicationDate) &&
+      !reward.applicationDate.startsWith(targetMonth)
+    ) {
+      continue;
+    }
+
+    const group = groupedCases.get(reward.applicationKey) ?? {
+      applicationDate: reward.applicationDate,
+      staffId: reward.staffId,
+      productNames: new Set<string>(),
+      constructionDate: reward.constructionDate,
+      constructionDateNote: reward.constructionDateNote,
+    };
+    if (reward.priceKey) group.productNames.add(reward.priceKey);
+    groupedCases.set(reward.applicationKey, group);
+  }
+
+  const cases = Array.from(groupedCases, ([applicationKey, group], index) => ({
+    key: `case-${index + 1}`,
+    caseNumber: shortenCaseNumber(applicationKey, index),
+    applicationDate: group.applicationDate?.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
+    acquiredStaffName: group.staffId
+      ? (staffNames.get(group.staffId) ?? "担当者不明")
+      : "担当者不明",
+    productName:
+      group.productNames.size > 0
+        ? Array.from(group.productNames).join(" / ")
+        : "商品未設定",
+    constructionSchedule: normalizeConstructionSchedule(
+      group.constructionDate,
+      group.constructionDateNote
+    ),
+  }));
+  const caseCountMatches = cases.length === summary.actual;
+
+  if (!caseCountMatches) {
+    console.warn("[dashboard] store case count mismatch", {
+      actualCount: summary.actual,
+      caseCount: cases.length,
+    });
+  }
+
+  return {
+    ...summary,
+    targetMonth,
+    cases,
+    caseCountMatches,
+  };
 }
 
 export function createStaffRanking(

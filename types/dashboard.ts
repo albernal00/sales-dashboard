@@ -54,7 +54,23 @@ export type StoreDetail = StoreProgressRow & {
 export type StoreGoalStatus = "achieved" | "inProgress" | "zero" | "unregistered";
 
 export type StoreListRow = StoreProgressRow & {
+  storeId: string;
   goalStatus: StoreGoalStatus;
+};
+
+export type StoreCaseRow = {
+  key: string;
+  caseNumber: string;
+  applicationDate?: string;
+  acquiredStaffName: string;
+  productName: string;
+  constructionSchedule: string;
+};
+
+export type StoreRecordDetail = StoreListRow & {
+  targetMonth: string;
+  cases: StoreCaseRow[];
+  caseCountMatches: boolean;
 };
 
 export type StaffListRow = {

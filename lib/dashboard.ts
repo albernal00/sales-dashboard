@@ -2,6 +2,7 @@ import type {
   DashboardKpis,
   Reward,
   Staff,
+  StaffListRow,
   StaffRankingRow,
   StoreDetail,
   StoreListRow,
@@ -165,4 +166,37 @@ export function createStaffRanking(
       reward: rewardTotals.get(person.id) ?? 0,
     }))
     .sort((a, b) => b.count - a.count || b.reward - a.reward);
+}
+
+export function createStaffListRows(
+  staff: Staff[],
+  stores: StorePerformance[],
+  rewards: Reward[],
+  targetDataAvailable: boolean
+): StaffListRow[] {
+  const rewardTotals = rewards.reduce<Map<string, number>>((totals, reward) => {
+    if (!reward.staffId) return totals;
+    totals.set(reward.staffId, (totals.get(reward.staffId) ?? 0) + reward.amount);
+    return totals;
+  }, new Map());
+
+  return staff.map((person, index) => {
+    const assignedStores = stores.filter((store) => store.staffId === person.id);
+    const target = assignedStores.reduce((sum, store) => sum + store.target, 0);
+    const actual = assignedStores.reduce((sum, store) => sum + store.actual, 0);
+
+    return {
+      key: `staff-${index + 1}`,
+      name: person.name,
+      storeCount: assignedStores.length,
+      storeNames: assignedStores.map((store) => store.name),
+      target,
+      actual,
+      remaining: calculateRemaining(actual, target),
+      progress: calculateProgress(actual, target),
+      personalActual: person.personalActual,
+      expectedReward: rewardTotals.get(person.id) ?? 0,
+      targetRegistered: targetDataAvailable,
+    };
+  });
 }

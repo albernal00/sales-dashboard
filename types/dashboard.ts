@@ -63,6 +63,20 @@ export type StoreListRow = StoreProgressRow & {
   goalStatus: StoreGoalStatus;
 };
 
+export type StaffListRow = {
+  key: string;
+  name: string;
+  storeCount: number;
+  storeNames: string[];
+  target: number;
+  actual: number;
+  remaining: number;
+  progress: number;
+  personalActual: number;
+  expectedReward: number;
+  targetRegistered: boolean;
+};
+
 export type StaffRankingRow = Staff & {
   count: number;
   reward: number;

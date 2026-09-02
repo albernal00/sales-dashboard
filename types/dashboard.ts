@@ -21,6 +21,9 @@ export type Reward = {
   staffId: string;
   storeId?: string;
   priceKey?: string;
+  applicationDate?: string;
+  constructionDate?: string;
+  constructionDateNote?: string;
   amount: number;
   status: RewardStatus;
 };
@@ -55,6 +58,7 @@ export type StoreListRow = StoreProgressRow & {
 };
 
 export type StaffListRow = {
+  staffId: string;
   key: string;
   name: string;
   storeCount: number;
@@ -66,6 +70,21 @@ export type StaffListRow = {
   personalActual: number;
   expectedSales: number;
   targetRegistered: boolean;
+};
+
+export type StaffCaseRow = {
+  key: string;
+  caseNumber: string;
+  applicationDate?: string;
+  storeName: string;
+  productName: string;
+  expectedSales: number;
+  constructionSchedule: string;
+};
+
+export type StaffDetail = StaffListRow & {
+  targetMonth: string;
+  cases: StaffCaseRow[];
 };
 
 export type StaffRankingRow = Staff & {

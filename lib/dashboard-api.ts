@@ -171,6 +171,9 @@ function normalizeRewardEntries(value: unknown): Reward[] {
     const staffId = getString(item, ["staffId"]) ?? "";
     const storeId = getString(item, ["storeId"]);
     const priceKey = getString(item, ["priceKey"]);
+    const applicationDate = getString(item, ["applicationDate"]);
+    const constructionDate = getString(item, ["constructionDate"]);
+    const constructionDateNote = getString(item, ["constructionDateNote"]);
     const applicationKey =
       getString(item, ["caseId", "applicationId", "id"]) ??
       `reward-row-${index + 1}`;
@@ -183,6 +186,9 @@ function normalizeRewardEntries(value: unknown): Reward[] {
         staffId,
         storeId,
         priceKey,
+        applicationDate,
+        constructionDate,
+        constructionDateNote,
         amount,
         status,
       }];
@@ -203,6 +209,9 @@ function normalizeRewardEntries(value: unknown): Reward[] {
         staffId,
         storeId,
         priceKey,
+        applicationDate,
+        constructionDate,
+        constructionDateNote,
         amount: confirmed,
         status: "confirmed",
       });
@@ -214,6 +223,9 @@ function normalizeRewardEntries(value: unknown): Reward[] {
         staffId,
         storeId,
         priceKey,
+        applicationDate,
+        constructionDate,
+        constructionDateNote,
         amount: pending,
         status: "pending",
       });
@@ -226,6 +238,9 @@ function normalizeRewardEntries(value: unknown): Reward[] {
         staffId,
         storeId,
         priceKey,
+        applicationDate,
+        constructionDate,
+        constructionDateNote,
         amount: 0,
         status: "pending",
       });

@@ -2,6 +2,7 @@ import type {
   DashboardKpis,
   Reward,
   Staff,
+  StaffDetail,
   StaffListRow,
   StaffRankingRow,
   StoreDetail,
@@ -145,6 +146,7 @@ export function createStaffListRows(
     const actual = assignedStores.reduce((sum, store) => sum + store.actual, 0);
 
     return {
+      staffId: person.id,
       key: `staff-${index + 1}`,
       name: person.name,
       storeCount: assignedStores.length,
@@ -158,4 +160,108 @@ export function createStaffListRows(
       targetRegistered: targetDataAvailable,
     };
   });
+}
+
+function normalizeConstructionSchedule(
+  constructionDate?: string,
+  constructionDateNote?: string
+): string {
+  const date = constructionDate?.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (date) return date;
+
+  const note = constructionDateNote?.trim() ?? "";
+  if (/工事不要/.test(note)) return "工事不要";
+  if (/未定/.test(note)) return "日程未定";
+  if (/調整/.test(note)) return "日程調整中";
+  if (/連絡待ち/.test(note)) return "連絡待ち";
+  if (/確認/.test(note)) return "日程確認中";
+  return "日程未定";
+}
+
+function shortenCaseNumber(applicationKey: string, index: number): string {
+  if (/^(reward-row-|reward-total)/.test(applicationKey)) {
+    return `案件${String(index + 1).padStart(3, "0")}`;
+  }
+
+  const safeHash = applicationKey.replace(/[^a-z0-9]/gi, "");
+  return safeHash ? `#${safeHash.slice(0, 8).toUpperCase()}` : `案件${index + 1}`;
+}
+
+export function createStaffDetail(
+  staffId: string,
+  staff: Staff[],
+  stores: StorePerformance[],
+  rewards: Reward[],
+  targetMonth: string,
+  targetDataAvailable: boolean
+): StaffDetail | undefined {
+  const person = staff.find((candidate) => candidate.id === staffId);
+  if (!person) return undefined;
+
+  const summary = createStaffListRows(
+    [person],
+    stores,
+    rewards,
+    targetDataAvailable
+  )[0];
+  const storeNames = new Map(stores.map((store) => [store.id, store.name]));
+  const groupedCases = new Map<
+    string,
+    {
+      applicationDate?: string;
+      storeId?: string;
+      productNames: Set<string>;
+      expectedSales: number;
+      constructionDate?: string;
+      constructionDateNote?: string;
+    }
+  >();
+
+  for (const reward of rewards) {
+    if (reward.staffId !== staffId) continue;
+    if (
+      reward.applicationDate &&
+      /^\d{4}-\d{2}/.test(reward.applicationDate) &&
+      !reward.applicationDate.startsWith(targetMonth)
+    ) {
+      continue;
+    }
+
+    const group = groupedCases.get(reward.applicationKey) ?? {
+      applicationDate: reward.applicationDate,
+      storeId: reward.storeId,
+      productNames: new Set<string>(),
+      expectedSales: 0,
+      constructionDate: reward.constructionDate,
+      constructionDateNote: reward.constructionDateNote,
+    };
+    if (reward.priceKey) group.productNames.add(reward.priceKey);
+    group.expectedSales += reward.amount;
+    groupedCases.set(reward.applicationKey, group);
+  }
+
+  const cases = Array.from(groupedCases, ([applicationKey, group], index) => ({
+    key: `case-${index + 1}`,
+    caseNumber: shortenCaseNumber(applicationKey, index),
+    applicationDate: group.applicationDate?.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
+    storeName: group.storeId
+      ? (storeNames.get(group.storeId) ?? "店舗不明")
+      : "店舗不明",
+    productName:
+      group.productNames.size > 0
+        ? Array.from(group.productNames).join(" / ")
+        : "商品未設定",
+    expectedSales: group.expectedSales,
+    constructionSchedule: normalizeConstructionSchedule(
+      group.constructionDate,
+      group.constructionDateNote
+    ),
+  }));
+
+  return {
+    ...summary,
+    expectedSales: cases.reduce((sum, item) => sum + item.expectedSales, 0),
+    targetMonth,
+    cases,
+  };
 }

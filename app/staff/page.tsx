@@ -56,7 +56,10 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
                 </div>
               )}
 
-            <StaffTable staff={staff} />
+            <StaffTable
+              staff={staff}
+              targetMonth={dashboardData.targetMonth}
+            />
           </div>
         </main>
       </div>

@@ -8,6 +8,7 @@ import { formatUpdatedAt } from "@/lib/formatters";
 
 type HeaderProps = {
   pathname: string;
+  controlsPathname?: string;
   title?: string;
   description?: string;
   targetMonth: string;
@@ -18,6 +19,7 @@ type HeaderProps = {
 
 export default function Header({
   pathname,
+  controlsPathname,
   title = "ダッシュボード",
   description = "営業実績・売上進捗を確認できます",
   targetMonth,
@@ -50,7 +52,7 @@ export default function Header({
 
       <div className="flex items-center gap-2 sm:gap-3">
         <DashboardControls
-          pathname={pathname}
+          pathname={controlsPathname ?? pathname}
           targetMonth={targetMonth}
           monthOptions={monthOptions}
           formattedUpdatedAt={formatUpdatedAt(updatedAt)}

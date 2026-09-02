@@ -57,10 +57,11 @@ export default async function Home({ searchParams }: HomeProps) {
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
-      <Sidebar />
+      <Sidebar pathname="/" targetMonth={dashboardData.targetMonth} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Header
+          pathname="/"
           targetMonth={dashboardData.targetMonth}
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}

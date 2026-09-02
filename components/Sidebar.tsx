@@ -1,7 +1,13 @@
 import { BarChart3, HelpCircle } from "lucide-react";
+import Link from "next/link";
 import { menuItems } from "./navigation";
 
-export default function Sidebar() {
+type SidebarProps = {
+  pathname: string;
+  targetMonth: string;
+};
+
+export default function Sidebar({ pathname, targetMonth }: SidebarProps) {
   return (
     <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col bg-[#101b36] px-4 py-5 text-white lg:flex">
       <div className="mb-8 flex items-center gap-3 px-2">
@@ -18,26 +24,42 @@ export default function Sidebar() {
       <nav className="space-y-1" aria-label="メインメニュー">
         {menuItems.map((item) => {
           const Icon = item.icon;
+          const isCurrent = item.href === pathname;
+
+          if (item.available && item.href) {
+            return (
+              <Link
+                key={item.name}
+                href={{ pathname: item.href, query: { month: targetMonth } }}
+                aria-current={isCurrent ? "page" : undefined}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
+                  isCurrent
+                    ? "bg-blue-500 text-white shadow-md shadow-blue-950/20"
+                    : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
+                }`}
+              >
+                <Icon
+                  size={18}
+                  strokeWidth={isCurrent ? 2.3 : 1.9}
+                  aria-hidden="true"
+                />
+                <span className="flex-1">{item.name}</span>
+              </Link>
+            );
+          }
 
           return (
             <button
               type="button"
               key={item.name}
-              disabled={!item.available}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition ${
-                item.available
-                  ? "bg-blue-500 text-white shadow-md shadow-blue-950/20"
-                  : "cursor-not-allowed text-slate-500"
-              }`}
-              aria-current={item.available ? "page" : undefined}
+              disabled
+              className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium text-slate-500"
             >
-              <Icon size={18} strokeWidth={item.available ? 2.3 : 1.9} aria-hidden="true" />
+              <Icon size={18} strokeWidth={1.9} aria-hidden="true" />
               <span className="flex-1">{item.name}</span>
-              {!item.available && (
-                <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-semibold text-slate-500">
-                  準備中
-                </span>
-              )}
+              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[9px] font-semibold text-slate-500">
+                準備中
+              </span>
             </button>
           );
         })}

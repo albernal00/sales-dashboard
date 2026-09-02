@@ -56,6 +56,13 @@ export type StoreDetail = StoreProgressRow & {
   products: ProductRewardBreakdown[];
 };
 
+export type StoreGoalStatus = "achieved" | "inProgress" | "zero" | "unregistered";
+
+export type StoreListRow = StoreProgressRow & {
+  expectedReward: number;
+  goalStatus: StoreGoalStatus;
+};
+
 export type StaffRankingRow = Staff & {
   count: number;
   reward: number;

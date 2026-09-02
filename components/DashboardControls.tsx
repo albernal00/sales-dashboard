@@ -6,12 +6,14 @@ import { CalendarDays, RefreshCw } from "lucide-react";
 import { formatTargetMonth } from "@/lib/formatters";
 
 type DashboardControlsProps = {
+  pathname: string;
   targetMonth: string;
   monthOptions: string[];
   formattedUpdatedAt: string;
 };
 
 export default function DashboardControls({
+  pathname,
   targetMonth,
   monthOptions,
   formattedUpdatedAt,
@@ -21,7 +23,9 @@ export default function DashboardControls({
 
   const handleMonthChange = (month: string) => {
     startTransition(() => {
-      router.push(`/?month=${encodeURIComponent(month)}`, { scroll: false });
+      router.push(`${pathname}?month=${encodeURIComponent(month)}`, {
+        scroll: false,
+      });
     });
   };
 

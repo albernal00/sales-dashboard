@@ -4,6 +4,7 @@ import type {
   Staff,
   StaffRankingRow,
   StoreDetail,
+  StoreListRow,
   StorePerformance,
   StoreProgressRow,
 } from "@/types/dashboard";
@@ -113,6 +114,37 @@ export function createStoreDetails(
         0
       ),
       products,
+    };
+  });
+}
+
+export function createStoreListRows(
+  stores: StorePerformance[],
+  staff: Staff[],
+  rewards: Reward[],
+  targetDataAvailable: boolean
+): StoreListRow[] {
+  const progressRows = createStoreProgressRows(stores, staff);
+  const rewardTotals = rewards.reduce<Map<string, number>>((totals, reward) => {
+    if (!reward.storeId) return totals;
+    totals.set(reward.storeId, (totals.get(reward.storeId) ?? 0) + reward.amount);
+    return totals;
+  }, new Map());
+
+  return progressRows.map((row, index) => {
+    const store = stores[index];
+    const goalStatus = !targetDataAvailable
+      ? "unregistered"
+      : row.target === 0
+        ? "zero"
+        : row.actual >= row.target
+          ? "achieved"
+          : "inProgress";
+
+    return {
+      ...row,
+      expectedReward: rewardTotals.get(store.id) ?? 0,
+      goalStatus,
     };
   });
 }

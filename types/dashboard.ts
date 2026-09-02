@@ -17,7 +17,10 @@ export type RewardStatus = "confirmed" | "pending";
 
 export type Reward = {
   id: string;
+  applicationKey: string;
   staffId: string;
+  storeId?: string;
+  priceKey?: string;
   amount: number;
   status: RewardStatus;
 };
@@ -31,10 +34,26 @@ export type DashboardKpis = {
   expectedReward: number;
 };
 
-export type StoreProgressRow = StorePerformance & {
+export type StoreProgressRow = {
+  key: string;
+  name: string;
+  target: number;
+  actual: number;
   staffName: string;
   remaining: number;
   progress: number;
+};
+
+export type ProductRewardBreakdown = {
+  priceKey: string;
+  count: number;
+  expectedReward: number;
+};
+
+export type StoreDetail = StoreProgressRow & {
+  targetMonth: string;
+  expectedReward: number;
+  products: ProductRewardBreakdown[];
 };
 
 export type StaffRankingRow = Staff & {

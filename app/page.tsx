@@ -8,6 +8,7 @@ import { getDashboardData } from "@/lib/dashboard-api";
 import {
   calculateDashboardKpis,
   createStaffRanking,
+  createStoreDetails,
   createStoreProgressRows,
 } from "@/lib/dashboard";
 import {
@@ -42,6 +43,12 @@ export default async function Home({ searchParams }: HomeProps) {
   const storeRows = createStoreProgressRows(
     dashboardData.stores,
     dashboardData.staff
+  );
+  const storeDetails = createStoreDetails(
+    dashboardData.stores,
+    dashboardData.staff,
+    dashboardData.rewards,
+    dashboardData.targetMonth
   );
   const staffRanking = createStaffRanking(
     dashboardData.staff,
@@ -106,7 +113,11 @@ export default async function Home({ searchParams }: HomeProps) {
 
           <div className="mt-5 grid gap-5 2xl:grid-cols-3">
             <div className="min-w-0 2xl:col-span-2">
-              <StoreProgress stores={storeRows} />
+              <StoreProgress
+                key={dashboardData.targetMonth}
+                stores={storeRows}
+                details={storeDetails}
+              />
             </div>
 
             <StaffRanking staff={staffRanking} />

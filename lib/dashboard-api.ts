@@ -169,25 +169,40 @@ function normalizeRewardEntries(value: unknown): Reward[] {
     if (isCancelledReward(item)) return [];
 
     const staffId = getString(item, ["staffId"]) ?? "";
+    const storeId = getString(item, ["storeId"]);
+    const priceKey = getString(item, ["priceKey"]);
+    const applicationKey =
+      getString(item, ["caseId", "applicationId", "id"]) ??
+      `reward-row-${index + 1}`;
     const amount = getNumber(item, ["amount"]);
     const status = getString(item, ["status"]);
     if (amount !== undefined && (status === "confirmed" || status === "pending")) {
       return [{
         id: getString(item, ["id"]) ?? `reward-${index + 1}`,
+        applicationKey,
         staffId,
+        storeId,
+        priceKey,
         amount,
         status,
       }];
     }
 
-    const confirmed = getNumber(item, ["confirmed"]) ?? 0;
-    const pending = getNumber(item, ["pending"]) ?? 0;
+    const confirmedValue = getNumber(item, ["confirmed"]);
+    const pendingValue = getNumber(item, ["pending"]);
+    if (confirmedValue === undefined && pendingValue === undefined) return [];
+
+    const confirmed = confirmedValue ?? 0;
+    const pending = pendingValue ?? 0;
     const result: Reward[] = [];
 
     if (confirmed !== 0) {
       result.push({
         id: `reward-${index + 1}-confirmed`,
+        applicationKey,
         staffId,
+        storeId,
+        priceKey,
         amount: confirmed,
         status: "confirmed",
       });
@@ -195,8 +210,23 @@ function normalizeRewardEntries(value: unknown): Reward[] {
     if (pending !== 0) {
       result.push({
         id: `reward-${index + 1}-pending`,
+        applicationKey,
         staffId,
+        storeId,
+        priceKey,
         amount: pending,
+        status: "pending",
+      });
+    }
+
+    if (confirmed === 0 && pending === 0) {
+      result.push({
+        id: `reward-${index + 1}-zero`,
+        applicationKey,
+        staffId,
+        storeId,
+        priceKey,
+        amount: 0,
         status: "pending",
       });
     }
@@ -246,12 +276,14 @@ function normalizeRewards(value: unknown): Reward[] {
   return [
     {
       id: "reward-total-confirmed",
+      applicationKey: "reward-total",
       staffId: "",
       amount: getNumber(value, ["confirmed"]) ?? 0,
       status: "confirmed",
     },
     {
       id: "reward-total-pending",
+      applicationKey: "reward-total",
       staffId: "",
       amount: getNumber(value, ["pending"]) ?? 0,
       status: "pending",

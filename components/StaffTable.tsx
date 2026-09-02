@@ -6,6 +6,7 @@ import {
   formatCount,
   formatCurrency,
   formatPercent,
+  formatStoreCount,
 } from "@/lib/formatters";
 import type { StaffListRow } from "@/types/dashboard";
 
@@ -162,7 +163,7 @@ export default function StaffTable({ staff }: StaffTableProps) {
                     {person.name}
                   </th>
                   <td className="px-4 py-4 text-right tabular-nums text-slate-600">
-                    {formatCount(person.storeCount)}
+                    {formatStoreCount(person.storeCount)}
                   </td>
                   <td className="px-4 py-4">
                     {person.storeNames.length === 0 ? (

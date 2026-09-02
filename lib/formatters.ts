@@ -5,6 +5,10 @@ export function formatCount(value: number, withUnit = true): string {
   return withUnit ? `${formatted}件` : formatted;
 }
 
+export function formatStoreCount(value: number): string {
+  return `${numberFormatter.format(value)}店`;
+}
+
 export function formatSignedCount(value: number): string {
   const sign = value > 0 ? "+" : "";
   return `${sign}${formatCount(value)}`;

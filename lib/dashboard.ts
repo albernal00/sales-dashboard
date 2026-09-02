@@ -30,7 +30,10 @@ export function calculateDashboardKpis(
     0
   );
   const expectedReward = rewards.reduce(
-    (sum, reward) => sum + reward.amount,
+    (sum, reward) =>
+      reward.status === "confirmed" || reward.status === "pending"
+        ? sum + reward.amount
+        : sum,
     0
   );
 

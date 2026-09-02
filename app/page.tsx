@@ -98,7 +98,7 @@ export default async function Home({ searchParams }: HomeProps) {
             <KpiCard
               title="報酬見込"
               value={formatCurrency(kpis.expectedReward)}
-              subtext="確定 + 未確定"
+              subtext="対象月に申し込まれた、キャンセル以外の案件の見込報酬"
               icon={BadgeJapaneseYen}
               tone="emerald"
             />

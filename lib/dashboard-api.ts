@@ -68,6 +68,28 @@ function getNumber(record: UnknownRecord, keys: string[]): number | undefined {
   }
 }
 
+function isCancelledReward(record: UnknownRecord): boolean {
+  if (
+    record.isCancelled === true ||
+    record.cancelled === true ||
+    record.canceled === true
+  ) {
+    return true;
+  }
+
+  const applicationStatus = getString(record, [
+    "applicationStatus",
+    "caseStatus",
+    "orderStatus",
+    "contractStatus",
+    "status",
+  ]);
+
+  return applicationStatus
+    ? /cancel(?:led|ed)?|キャンセル/i.test(applicationStatus)
+    : false;
+}
+
 function normalizeStores(value: unknown): StorePerformance[] {
   if (!Array.isArray(value)) throw new DashboardApiError("STORES_NOT_ARRAY");
 
@@ -144,6 +166,7 @@ function normalizeRewardEntries(value: unknown): Reward[] {
 
   return value.flatMap((item, index) => {
     if (!isRecord(item)) return [];
+    if (isCancelledReward(item)) return [];
 
     const staffId = getString(item, ["staffId"]) ?? "";
     const amount = getNumber(item, ["amount"]);
@@ -185,13 +208,16 @@ function normalizeRewardEntries(value: unknown): Reward[] {
 function normalizeRewards(value: unknown): Reward[] {
   const entries = normalizeRewardEntries(value);
   if (Array.isArray(value)) {
-    const acceptedRows = value.filter(
+    const eligibleRows = value.filter(
+      (item) => !isRecord(item) || !isCancelledReward(item)
+    );
+    const acceptedRows = eligibleRows.filter(
       (item) => normalizeRewardEntries([item]).length > 0
     ).length;
-    logValidationResult("rewards", value.length, acceptedRows);
-    if (value.length > 0 && entries.length === 0) {
+    logValidationResult("rewards", eligibleRows.length, acceptedRows);
+    if (eligibleRows.length > 0 && entries.length === 0) {
       throw new DashboardApiError("REWARDS_NO_VALID_ROWS", {
-        receivedCount: value.length,
+        receivedCount: eligibleRows.length,
       });
     }
     return entries;
@@ -199,7 +225,17 @@ function normalizeRewards(value: unknown): Reward[] {
   if (!isRecord(value)) throw new DashboardApiError("REWARDS_INVALID");
 
   const byStaff = normalizeRewardEntries(value.byStaff);
-  if (byStaff.length > 0) return byStaff;
+  if (Array.isArray(value.byStaff)) {
+    const eligibleRows = value.byStaff.filter(
+      (item) => !isRecord(item) || !isCancelledReward(item)
+    );
+    if (eligibleRows.length > 0 && byStaff.length === 0) {
+      throw new DashboardApiError("REWARDS_NO_VALID_ROWS", {
+        receivedCount: eligibleRows.length,
+      });
+    }
+    return byStaff;
+  }
 
   const hasConfirmed = getNumber(value, ["confirmed"]) !== undefined;
   const hasPending = getNumber(value, ["pending"]) !== undefined;

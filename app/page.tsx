@@ -16,9 +16,25 @@ import {
   formatPercent,
   formatSignedCount,
 } from "@/lib/formatters";
+import {
+  createMonthOptions,
+  getTokyoCurrentMonth,
+  resolveTargetMonth,
+} from "@/lib/month";
 
-export default async function Home() {
-  const dashboardData = await getDashboardData();
+type HomeProps = {
+  searchParams: Promise<{ month?: string | string[] }>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const currentMonth = getTokyoCurrentMonth();
+  const query = await searchParams;
+  const requestedMonth = resolveTargetMonth(query.month, currentMonth);
+  const dashboardData = await getDashboardData(requestedMonth);
+  const monthOptions = createMonthOptions(
+    currentMonth,
+    dashboardData.targetMonth
+  );
   const kpis = calculateDashboardKpis(
     dashboardData.stores,
     dashboardData.rewards
@@ -41,10 +57,19 @@ export default async function Home() {
           targetMonth={dashboardData.targetMonth}
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}
+          monthOptions={monthOptions}
         />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1600px]">
+          {!dashboardData.isFallback && !dashboardData.targetDataAvailable && (
+            <div
+              role="status"
+              className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800"
+            >
+              この月の目標データは登録されていません
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
             <KpiCard
               title="今月実績"

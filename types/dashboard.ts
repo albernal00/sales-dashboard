@@ -65,4 +65,5 @@ export type DashboardData = {
   sourceHealth: unknown;
   updatedAt: string;
   isFallback: boolean;
+  targetDataAvailable: boolean;
 };

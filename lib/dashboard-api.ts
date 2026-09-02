@@ -12,7 +12,6 @@ import type {
   StorePerformance,
 } from "@/types/dashboard";
 
-const TARGET_MONTH = "2026-09";
 const FALLBACK_UPDATED_AT = "2026-08-31T17:50:00+09:00";
 
 type UnknownRecord = Record<string, unknown>;
@@ -78,14 +77,14 @@ function normalizeStores(value: unknown): StorePerformance[] {
     const name = getString(item, ["name", "storeName"]);
     const target = getNumber(item, ["target"]);
     const actual = getNumber(item, ["actual"]);
-    if (!name || target === undefined || actual === undefined) {
+    if (!name || actual === undefined) {
       return [];
     }
 
     return [{
       id: getString(item, ["id", "storeId", "customerId"]) ?? `store-${index + 1}`,
       name,
-      target,
+      target: target ?? 0,
       actual,
       previousActual: getNumber(item, ["previousActual"]) ?? 0,
       staffId: getString(item, ["staffId", "assignedStaffId"]) ?? "",
@@ -100,6 +99,15 @@ function normalizeStores(value: unknown): StorePerformance[] {
   }
 
   return stores;
+}
+
+function hasTargetData(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.some(
+      (item) => isRecord(item) && getNumber(item, ["target"]) !== undefined
+    )
+  );
 }
 
 function normalizeStaff(value: unknown): Staff[] {
@@ -177,7 +185,10 @@ function normalizeRewardEntries(value: unknown): Reward[] {
 function normalizeRewards(value: unknown): Reward[] {
   const entries = normalizeRewardEntries(value);
   if (Array.isArray(value)) {
-    logValidationResult("rewards", value.length, entries.length);
+    const acceptedRows = value.filter(
+      (item) => normalizeRewardEntries([item]).length > 0
+    ).length;
+    logValidationResult("rewards", value.length, acceptedRows);
     if (value.length > 0 && entries.length === 0) {
       throw new DashboardApiError("REWARDS_NO_VALID_ROWS", {
         receivedCount: value.length,
@@ -212,7 +223,7 @@ function normalizeRewards(value: unknown): Reward[] {
   ];
 }
 
-function normalizeResponse(value: unknown): DashboardData {
+function normalizeResponse(value: unknown, requestedMonth: string): DashboardData {
   if (!isRecord(value)) throw new DashboardApiError("RESPONSE_NOT_OBJECT");
 
   const response = value as Partial<GasDashboardResponse>;
@@ -231,7 +242,10 @@ function normalizeResponse(value: unknown): DashboardData {
   return {
     status: response.status,
     targetMonth:
-      typeof response.targetMonth === "string" ? response.targetMonth : TARGET_MONTH,
+      typeof response.targetMonth === "string" &&
+      /^\d{4}-(0[1-9]|1[0-2])$/.test(response.targetMonth)
+        ? response.targetMonth
+        : requestedMonth,
     stores: normalizeStores(response.stores),
     staff: normalizeStaff(response.staff),
     rewards: normalizeRewards(response.rewards),
@@ -241,13 +255,14 @@ function normalizeResponse(value: unknown): DashboardData {
     sourceHealth: response.sourceHealth,
     updatedAt: typeof response.updatedAt === "string" ? response.updatedAt : "",
     isFallback: false,
+    targetDataAvailable: hasTargetData(response.stores),
   };
 }
 
-function getFallbackData(): DashboardData {
+function getFallbackData(targetMonth: string): DashboardData {
   return {
     status: "warning",
-    targetMonth: TARGET_MONTH,
+    targetMonth,
     stores: fallbackStores,
     staff: fallbackStaff,
     rewards: fallbackRewards,
@@ -255,25 +270,26 @@ function getFallbackData(): DashboardData {
     sourceHealth: null,
     updatedAt: FALLBACK_UPDATED_AT,
     isFallback: true,
+    targetDataAvailable: true,
   };
 }
 
-export async function getDashboardData(): Promise<DashboardData> {
+export async function getDashboardData(targetMonth: string): Promise<DashboardData> {
   await connection();
 
   const apiUrl = process.env.GAS_DASHBOARD_API_URL;
   if (!apiUrl) {
     logFallback("ENV_MISSING");
-    return getFallbackData();
+    return getFallbackData(targetMonth);
   }
 
   let url: URL;
   try {
     url = new URL(apiUrl);
-    url.searchParams.set("month", TARGET_MONTH);
+    url.searchParams.set("month", targetMonth);
   } catch {
     logFallback("URL_INVALID");
-    return getFallbackData();
+    return getFallbackData(targetMonth);
   }
 
   let response: Response;
@@ -286,7 +302,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     logFallback("NETWORK_ERROR", {
       errorType: error instanceof Error ? error.name : "unknown",
     });
-    return getFallbackData();
+    return getFallbackData(targetMonth);
   }
 
   if (response.redirected) {
@@ -300,7 +316,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       httpStatus: response.status,
       redirected: response.redirected,
     });
-    return getFallbackData();
+    return getFallbackData(targetMonth);
   }
 
   let payload: unknown;
@@ -313,11 +329,11 @@ export async function getDashboardData(): Promise<DashboardData> {
       contentTypeIsJson:
         response.headers.get("content-type")?.includes("application/json") ?? false,
     });
-    return getFallbackData();
+    return getFallbackData(targetMonth);
   }
 
   try {
-    const data = normalizeResponse(payload);
+    const data = normalizeResponse(payload, targetMonth);
     if (data.status === "warning") {
       console.warn("[dashboard-api] api_warning", {
         warningCount: data.warnings.length,
@@ -335,6 +351,6 @@ export async function getDashboardData(): Promise<DashboardData> {
         errorType: error instanceof Error ? error.name : "unknown",
       });
     }
-    return getFallbackData();
+    return getFallbackData(targetMonth);
   }
 }

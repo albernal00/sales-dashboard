@@ -31,7 +31,7 @@ export type DashboardKpis = {
   remaining: number;
   achievementRate: number;
   previousMonthDifference: number;
-  expectedReward: number;
+  expectedSales: number;
 };
 
 export type StoreProgressRow = {
@@ -44,22 +44,13 @@ export type StoreProgressRow = {
   progress: number;
 };
 
-export type ProductRewardBreakdown = {
-  priceKey: string;
-  count: number;
-  expectedReward: number;
-};
-
 export type StoreDetail = StoreProgressRow & {
   targetMonth: string;
-  expectedReward: number;
-  products: ProductRewardBreakdown[];
 };
 
 export type StoreGoalStatus = "achieved" | "inProgress" | "zero" | "unregistered";
 
 export type StoreListRow = StoreProgressRow & {
-  expectedReward: number;
   goalStatus: StoreGoalStatus;
 };
 
@@ -73,13 +64,13 @@ export type StaffListRow = {
   remaining: number;
   progress: number;
   personalActual: number;
-  expectedReward: number;
+  expectedSales: number;
   targetRegistered: boolean;
 };
 
 export type StaffRankingRow = Staff & {
   count: number;
-  reward: number;
+  sales: number;
 };
 
 export type GasDashboardStatus = "ok" | "success" | "warning";

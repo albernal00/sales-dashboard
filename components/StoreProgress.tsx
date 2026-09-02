@@ -10,7 +10,6 @@ import { createPortal } from "react-dom";
 import { ChevronRight, X } from "lucide-react";
 import {
   formatCount,
-  formatCurrency,
   formatPercent,
   formatTargetMonth,
 } from "@/lib/formatters";
@@ -141,53 +140,11 @@ export default function StoreProgress({ stores, details }: StoreProgressProps) {
             ))}
           </dl>
 
-          <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
-            <p className="text-[11px] font-semibold text-emerald-700">報酬見込合計</p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-slate-950">
-              {formatCurrency(selectedStore.expectedReward)}
-            </p>
-          </div>
-
-          <div className="mt-6">
-            <h3 className="text-sm font-bold text-slate-900">商品別内訳</h3>
-
-            {selectedStore.actual === 0 ? (
-              <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                対象月の実績はありません
-              </div>
-            ) : selectedStore.products.length === 0 ? (
-              <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                商品別報酬データはありません
-              </div>
-            ) : (
-              <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
-                <table className="w-full min-w-96 text-sm">
-                  <thead className="bg-slate-50 text-left text-[11px] font-semibold text-slate-400">
-                    <tr>
-                      <th className="px-4 py-3">商品</th>
-                      <th className="px-4 py-3 text-right">件数</th>
-                      <th className="px-4 py-3 text-right">報酬見込</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {selectedStore.products.map((product) => (
-                      <tr key={product.priceKey}>
-                        <td className="px-4 py-3 font-medium text-slate-800">
-                          {product.priceKey}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-slate-600">
-                          {formatCount(product.count)}
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-800">
-                          {formatCurrency(product.expectedReward)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          {selectedStore.actual === 0 && (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+              対象月の実績はありません
+            </div>
+          )}
         </div>
       </div>
     </div>

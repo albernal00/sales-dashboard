@@ -25,7 +25,6 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
   const stores = createStoreListRows(
     dashboardData.stores,
     dashboardData.staff,
-    dashboardData.rewards,
     dashboardData.targetDataAvailable
   );
 
@@ -37,7 +36,7 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
         <Header
           pathname="/stores"
           title="店舗別実績"
-          description="店舗ごとの営業実績・報酬進捗を確認できます"
+          description="店舗ごとの目標件数と実績件数を確認できます"
           targetMonth={dashboardData.targetMonth}
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}

@@ -47,7 +47,6 @@ export default async function Home({ searchParams }: HomeProps) {
   const storeDetails = createStoreDetails(
     dashboardData.stores,
     dashboardData.staff,
-    dashboardData.rewards,
     dashboardData.targetMonth
   );
   const staffRanking = createStaffRanking(
@@ -104,9 +103,9 @@ export default async function Home({ searchParams }: HomeProps) {
             />
 
             <KpiCard
-              title="報酬見込"
-              value={formatCurrency(kpis.expectedReward)}
-              subtext="対象月に申し込まれた、キャンセル以外の案件の見込報酬"
+              title="売上見込"
+              value={formatCurrency(kpis.expectedSales)}
+              subtext="対象月のキャンセル以外の申込案件の入り単価合計"
               icon={BadgeJapaneseYen}
               tone="emerald"
             />

@@ -32,7 +32,7 @@ export function calculateDashboardKpis(
     (sum, store) => sum + store.previousActual,
     0
   );
-  const expectedReward = rewards.reduce(
+  const expectedSales = rewards.reduce(
     (sum, reward) =>
       reward.status === "confirmed" || reward.status === "pending"
         ? sum + reward.amount
@@ -46,7 +46,7 @@ export function calculateDashboardKpis(
     remaining: calculateRemaining(actual, target),
     achievementRate: calculateProgress(actual, target),
     previousMonthDifference: actual - previousActual,
-    expectedReward,
+    expectedSales,
   };
 }
 
@@ -70,38 +70,11 @@ export function createStoreProgressRows(
 export function createStoreDetails(
   stores: StorePerformance[],
   staff: Staff[],
-  rewards: Reward[],
   targetMonth: string
 ): StoreDetail[] {
   const staffNames = new Map(staff.map((person) => [person.id, person.name]));
 
-  return stores.map((store, index) => {
-    const storeRewards = rewards.filter(
-      (reward) => reward.storeId === store.id
-    );
-    const productGroups = new Map<
-      string,
-      { applications: Set<string>; expectedReward: number }
-    >();
-
-    for (const reward of storeRewards) {
-      const priceKey = reward.priceKey ?? "未設定";
-      const group = productGroups.get(priceKey) ?? {
-        applications: new Set<string>(),
-        expectedReward: 0,
-      };
-      group.applications.add(reward.applicationKey);
-      group.expectedReward += reward.amount;
-      productGroups.set(priceKey, group);
-    }
-
-    const products = Array.from(productGroups, ([priceKey, group]) => ({
-      priceKey,
-      count: group.applications.size,
-      expectedReward: group.expectedReward,
-    })).sort((a, b) => b.count - a.count || a.priceKey.localeCompare(b.priceKey));
-
-    return {
+  return stores.map((store, index) => ({
       key: `store-${index + 1}`,
       name: store.name,
       target: store.target,
@@ -110,30 +83,17 @@ export function createStoreDetails(
       remaining: calculateRemaining(store.actual, store.target),
       progress: calculateProgress(store.actual, store.target),
       targetMonth,
-      expectedReward: storeRewards.reduce(
-        (sum, reward) => sum + reward.amount,
-        0
-      ),
-      products,
-    };
-  });
+  }));
 }
 
 export function createStoreListRows(
   stores: StorePerformance[],
   staff: Staff[],
-  rewards: Reward[],
   targetDataAvailable: boolean
 ): StoreListRow[] {
   const progressRows = createStoreProgressRows(stores, staff);
-  const rewardTotals = rewards.reduce<Map<string, number>>((totals, reward) => {
-    if (!reward.storeId) return totals;
-    totals.set(reward.storeId, (totals.get(reward.storeId) ?? 0) + reward.amount);
-    return totals;
-  }, new Map());
 
-  return progressRows.map((row, index) => {
-    const store = stores[index];
+  return progressRows.map((row) => {
     const goalStatus = !targetDataAvailable
       ? "unregistered"
       : row.target === 0
@@ -144,7 +104,6 @@ export function createStoreListRows(
 
     return {
       ...row,
-      expectedReward: rewardTotals.get(store.id) ?? 0,
       goalStatus,
     };
   });
@@ -163,9 +122,9 @@ export function createStaffRanking(
     .map((person) => ({
       ...person,
       count: person.personalActual,
-      reward: rewardTotals.get(person.id) ?? 0,
+      sales: rewardTotals.get(person.id) ?? 0,
     }))
-    .sort((a, b) => b.count - a.count || b.reward - a.reward);
+    .sort((a, b) => b.count - a.count || b.sales - a.sales);
 }
 
 export function createStaffListRows(
@@ -195,7 +154,7 @@ export function createStaffListRows(
       remaining: calculateRemaining(actual, target),
       progress: calculateProgress(actual, target),
       personalActual: person.personalActual,
-      expectedReward: rewardTotals.get(person.id) ?? 0,
+      expectedSales: rewardTotals.get(person.id) ?? 0,
       targetRegistered: targetDataAvailable,
     };
   });

@@ -19,7 +19,7 @@ type HeaderProps = {
 export default function Header({
   pathname,
   title = "ダッシュボード",
-  description = "営業実績・報酬進捗を確認できます",
+  description = "営業実績・売上進捗を確認できます",
   targetMonth,
   updatedAt,
   isFallback,

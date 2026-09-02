@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "営業実績管理 | ダッシュボード",
-  description: "営業実績・KPI・報酬進捗を一元管理するダッシュボード",
+  description: "営業実績・KPI・売上進捗を一元管理するダッシュボード",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

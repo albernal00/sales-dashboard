@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Search, Store } from "lucide-react";
 import {
   formatCount,
-  formatCurrency,
   formatPercent,
 } from "@/lib/formatters";
 import type { StoreGoalStatus, StoreListRow } from "@/types/dashboard";
@@ -13,7 +12,7 @@ type StoresTableProps = {
   stores: StoreListRow[];
 };
 
-type SortKey = "actual" | "progress" | "remaining" | "reward" | "name";
+type SortKey = "actual" | "progress" | "remaining" | "name";
 
 const statusStyles: Record<
   StoreGoalStatus,
@@ -63,8 +62,6 @@ export default function StoresTable({ stores }: StoresTableProps) {
           return b.progress - a.progress || b.actual - a.actual;
         case "remaining":
           return b.remaining - a.remaining || b.actual - a.actual;
-        case "reward":
-          return b.expectedReward - a.expectedReward || b.actual - a.actual;
         case "name":
           return a.name.localeCompare(b.name, "ja");
         default:
@@ -80,7 +77,7 @@ export default function StoresTable({ stores }: StoresTableProps) {
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">店舗一覧</h2>
             <p className="mt-0.5 text-xs text-slate-400">
-              店舗ごとの目標・実績・報酬見込を比較できます
+              店舗ごとの目標件数と実績件数を比較できます
             </p>
           </div>
 
@@ -131,7 +128,6 @@ export default function StoresTable({ stores }: StoresTableProps) {
                 <option value="actual">実績が多い順</option>
                 <option value="progress">進捗率が高い順</option>
                 <option value="remaining">残数が多い順</option>
-                <option value="reward">報酬見込が多い順</option>
                 <option value="name">店舗名順</option>
               </select>
             </label>
@@ -157,7 +153,7 @@ export default function StoresTable({ stores }: StoresTableProps) {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] text-sm">
+          <table className="w-full min-w-[920px] text-sm">
             <thead className="bg-slate-50/80">
               <tr className="border-b border-slate-200 text-left text-[11px] font-semibold text-slate-500">
                 <th scope="col" className="px-6 py-3.5">店舗名</th>
@@ -166,7 +162,6 @@ export default function StoresTable({ stores }: StoresTableProps) {
                 <th scope="col" className="px-4 py-3.5 text-right">実績</th>
                 <th scope="col" className="px-4 py-3.5 text-right">残数</th>
                 <th scope="col" className="min-w-48 px-4 py-3.5">進捗率</th>
-                <th scope="col" className="px-4 py-3.5 text-right">報酬見込</th>
                 <th scope="col" className="px-6 py-3.5">目標達成状況</th>
               </tr>
             </thead>
@@ -212,9 +207,6 @@ export default function StoresTable({ stores }: StoresTableProps) {
                           {formatPercent(store.progress, 0)}
                         </span>
                       </div>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-slate-800">
-                      {formatCurrency(store.expectedReward)}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${status.className}`}>

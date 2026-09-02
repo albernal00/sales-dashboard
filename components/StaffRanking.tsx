@@ -39,7 +39,7 @@ export default function StaffRanking({ staff }: StaffRankingProps) {
             </div>
 
             <p className="text-sm font-bold tabular-nums text-slate-800">
-              {formatCurrency(person.reward, "symbol")}
+              {formatCurrency(person.sales, "symbol")}
             </p>
           </div>
         ))}

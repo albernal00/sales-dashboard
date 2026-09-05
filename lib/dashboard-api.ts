@@ -179,7 +179,7 @@ function normalizeRewardEntries(value: unknown): Reward[] {
       `reward-row-${index + 1}`;
     const amount = getNumber(item, ["amount"]);
     const status = getString(item, ["status"]);
-    if (amount !== undefined && (status === "confirmed" || status === "pending")) {
+    if (amount !== undefined) {
       return [{
         id: getString(item, ["id"]) ?? `reward-${index + 1}`,
         applicationKey,
@@ -190,7 +190,7 @@ function normalizeRewardEntries(value: unknown): Reward[] {
         constructionDate,
         constructionDateNote,
         amount,
-        status,
+        status: status === "confirmed" ? "confirmed" : "pending",
       }];
     }
 

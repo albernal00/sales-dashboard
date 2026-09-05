@@ -37,6 +37,7 @@ export default async function StaffDetailPage({
     dashboardData.staff,
     dashboardData.stores,
     dashboardData.rewards,
+    dashboardData.cases,
     dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );
@@ -138,7 +139,11 @@ export default async function StaffDetailPage({
             </div>
 
             <div className="mt-5">
-              <StaffCasesTable cases={detail.cases} />
+              <StaffCasesTable
+                cases={detail.cases}
+                caseCountMatches={detail.caseCountMatches}
+                salesTotalMatches={detail.salesTotalMatches}
+              />
             </div>
           </div>
         </main>

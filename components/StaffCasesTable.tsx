@@ -7,11 +7,17 @@ import type { StaffCaseRow } from "@/types/dashboard";
 
 type StaffCasesTableProps = {
   cases: StaffCaseRow[];
+  caseCountMatches: boolean;
+  salesTotalMatches: boolean;
 };
 
 type SortKey = "dateDesc" | "dateAsc" | "salesDesc" | "salesAsc";
 
-export default function StaffCasesTable({ cases }: StaffCasesTableProps) {
+export default function StaffCasesTable({
+  cases,
+  caseCountMatches,
+  salesTotalMatches,
+}: StaffCasesTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("dateDesc");
   const visibleCases = useMemo(() => {
@@ -24,8 +30,13 @@ export default function StaffCasesTable({ cases }: StaffCasesTableProps) {
     );
 
     return filtered.toSorted((a, b) => {
-      if (sortKey === "salesDesc") return b.expectedSales - a.expectedSales;
-      if (sortKey === "salesAsc") return a.expectedSales - b.expectedSales;
+      if (sortKey === "salesDesc" || sortKey === "salesAsc") {
+        if (a.expectedSales === null) return 1;
+        if (b.expectedSales === null) return -1;
+        return sortKey === "salesDesc"
+          ? b.expectedSales - a.expectedSales
+          : a.expectedSales - b.expectedSales;
+      }
 
       const aDate = a.applicationDate ?? "";
       const bDate = b.applicationDate ?? "";
@@ -88,6 +99,15 @@ export default function StaffCasesTable({ cases }: StaffCasesTableProps) {
         </p>
       </div>
 
+      {(!caseCountMatches || !salesTotalMatches) && (
+        <div
+          role="status"
+          className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-800 sm:px-6"
+        >
+          一部の案件情報を表示できません
+        </div>
+      )}
+
       {visibleCases.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
           <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
@@ -135,7 +155,9 @@ export default function StaffCasesTable({ cases }: StaffCasesTableProps) {
                     {item.productName}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-slate-900">
-                    {formatCurrency(item.expectedSales)}
+                    {item.expectedSales === null
+                      ? "単価未設定"
+                      : formatCurrency(item.expectedSales)}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-slate-600">
                     {/^\d{4}-\d{2}-\d{2}$/.test(item.constructionSchedule)

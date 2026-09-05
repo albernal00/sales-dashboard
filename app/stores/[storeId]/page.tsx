@@ -58,7 +58,7 @@ export default async function StoreDetailPage({
     storeId,
     dashboardData.stores,
     dashboardData.staff,
-    dashboardData.rewards,
+    dashboardData.cases,
     dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );

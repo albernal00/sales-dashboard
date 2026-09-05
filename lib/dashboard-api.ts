@@ -8,6 +8,7 @@ import type {
   DashboardData,
   GasDashboardResponse,
   Reward,
+  SafeCase,
   Staff,
   StorePerformance,
 } from "@/types/dashboard";
@@ -306,6 +307,51 @@ function normalizeRewards(value: unknown): Reward[] {
   ];
 }
 
+function normalizeCases(value: unknown): SafeCase[] {
+  if (!Array.isArray(value)) throw new DashboardApiError("CASES_NOT_ARRAY");
+
+  const cases = value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+
+    const id = getString(item, ["id"]);
+    const storeId = getString(item, ["storeId"]);
+    const staffId = getString(item, ["staffId"]);
+    const applicationDate = getString(item, ["applicationDate"]);
+    const productName = getString(item, ["productName"]);
+    const rawEstimatedSales = item.estimatedSales;
+    const estimatedSales =
+      rawEstimatedSales === null
+        ? null
+        : getNumber(item, ["estimatedSales"]);
+
+    if (
+      !id ||
+      !storeId ||
+      !staffId ||
+      !applicationDate ||
+      !/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])(?:T|$)/.test(applicationDate) ||
+      !productName ||
+      estimatedSales === undefined
+    ) {
+      return [];
+    }
+
+    return [{
+      id,
+      storeId,
+      staffId,
+      applicationDate,
+      productName,
+      constructionDate: getString(item, ["constructionDate"]),
+      constructionDateNote: getString(item, ["constructionDateNote"]),
+      estimatedSales,
+    }];
+  });
+
+  logValidationResult("cases", value.length, cases.length);
+  return cases;
+}
+
 function normalizeResponse(value: unknown, requestedMonth: string): DashboardData {
   if (!isRecord(value)) throw new DashboardApiError("RESPONSE_NOT_OBJECT");
 
@@ -332,6 +378,7 @@ function normalizeResponse(value: unknown, requestedMonth: string): DashboardDat
     stores: normalizeStores(response.stores),
     staff: normalizeStaff(response.staff),
     rewards: normalizeRewards(response.rewards),
+    cases: normalizeCases(response.cases),
     warnings: Array.isArray(response.warnings)
       ? response.warnings.filter((warning): warning is string => typeof warning === "string")
       : [],
@@ -349,6 +396,7 @@ function getFallbackData(targetMonth: string): DashboardData {
     stores: fallbackStores,
     staff: fallbackStaff,
     rewards: fallbackRewards,
+    cases: [],
     warnings: ["GAS APIからデータを取得できませんでした。"],
     sourceHealth: null,
     updatedAt: FALLBACK_UPDATED_AT,
@@ -423,6 +471,7 @@ export async function getDashboardData(targetMonth: string): Promise<DashboardDa
         storeCount: data.stores.length,
         staffCount: data.staff.length,
         rewardCount: data.rewards.length,
+        caseCount: data.cases.length,
       });
     }
     return data;

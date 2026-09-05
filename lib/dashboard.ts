@@ -1,6 +1,7 @@
 import type {
   DashboardKpis,
   Reward,
+  SafeCase,
   Staff,
   StaffDetail,
   StaffListRow,
@@ -116,7 +117,7 @@ export function createStoreRecordDetail(
   storeId: string,
   stores: StorePerformance[],
   staff: Staff[],
-  rewards: Reward[],
+  casesData: SafeCase[],
   targetMonth: string,
   targetDataAvailable: boolean
 ): StoreRecordDetail | undefined {
@@ -129,52 +130,19 @@ export function createStoreRecordDetail(
     targetDataAvailable
   )[0];
   const staffNames = new Map(staff.map((person) => [person.id, person.name]));
-  const groupedCases = new Map<
-    string,
-    {
-      applicationDate?: string;
-      staffId?: string;
-      productNames: Set<string>;
-      constructionDate?: string;
-      constructionDateNote?: string;
-    }
-  >();
-
-  for (const reward of rewards) {
-    if (reward.storeId !== storeId) continue;
-    if (
-      reward.applicationDate &&
-      /^\d{4}-\d{2}/.test(reward.applicationDate) &&
-      !reward.applicationDate.startsWith(targetMonth)
-    ) {
-      continue;
-    }
-
-    const group = groupedCases.get(reward.applicationKey) ?? {
-      applicationDate: reward.applicationDate,
-      staffId: reward.staffId,
-      productNames: new Set<string>(),
-      constructionDate: reward.constructionDate,
-      constructionDateNote: reward.constructionDateNote,
-    };
-    if (reward.priceKey) group.productNames.add(reward.priceKey);
-    groupedCases.set(reward.applicationKey, group);
-  }
-
-  const cases = Array.from(groupedCases, ([applicationKey, group], index) => ({
+  const cases = casesData
+    .filter((item) =>
+      item.storeId === storeId && item.applicationDate.startsWith(targetMonth)
+    )
+    .map((item, index) => ({
     key: `case-${index + 1}`,
-    caseNumber: shortenCaseNumber(applicationKey, index),
-    applicationDate: group.applicationDate?.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
-    acquiredStaffName: group.staffId
-      ? (staffNames.get(group.staffId) ?? "担当者不明")
-      : "担当者不明",
-    productName:
-      group.productNames.size > 0
-        ? Array.from(group.productNames).join(" / ")
-        : "商品未設定",
+    caseNumber: shortenCaseNumber(item.id, index),
+    applicationDate: item.applicationDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
+    acquiredStaffName: staffNames.get(item.staffId) ?? "担当者不明",
+    productName: item.productName,
     constructionSchedule: normalizeConstructionSchedule(
-      group.constructionDate,
-      group.constructionDateNote
+      item.constructionDate,
+      item.constructionDateNote
     ),
   }));
   const caseCountMatches = cases.length === summary.actual;
@@ -276,6 +244,7 @@ export function createStaffDetail(
   staff: Staff[],
   stores: StorePerformance[],
   rewards: Reward[],
+  casesData: SafeCase[],
   targetMonth: string,
   targetDataAvailable: boolean
 ): StaffDetail | undefined {
@@ -289,63 +258,47 @@ export function createStaffDetail(
     targetDataAvailable
   )[0];
   const storeNames = new Map(stores.map((store) => [store.id, store.name]));
-  const groupedCases = new Map<
-    string,
-    {
-      applicationDate?: string;
-      storeId?: string;
-      productNames: Set<string>;
-      expectedSales: number;
-      constructionDate?: string;
-      constructionDateNote?: string;
-    }
-  >();
-
-  for (const reward of rewards) {
-    if (reward.staffId !== staffId) continue;
-    if (
-      reward.applicationDate &&
-      /^\d{4}-\d{2}/.test(reward.applicationDate) &&
-      !reward.applicationDate.startsWith(targetMonth)
-    ) {
-      continue;
-    }
-
-    const group = groupedCases.get(reward.applicationKey) ?? {
-      applicationDate: reward.applicationDate,
-      storeId: reward.storeId,
-      productNames: new Set<string>(),
-      expectedSales: 0,
-      constructionDate: reward.constructionDate,
-      constructionDateNote: reward.constructionDateNote,
-    };
-    if (reward.priceKey) group.productNames.add(reward.priceKey);
-    group.expectedSales += reward.amount;
-    groupedCases.set(reward.applicationKey, group);
-  }
-
-  const cases = Array.from(groupedCases, ([applicationKey, group], index) => ({
+  const cases = casesData
+    .filter((item) =>
+      item.staffId === staffId && item.applicationDate.startsWith(targetMonth)
+    )
+    .map((item, index) => ({
     key: `case-${index + 1}`,
-    caseNumber: shortenCaseNumber(applicationKey, index),
-    applicationDate: group.applicationDate?.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
-    storeName: group.storeId
-      ? (storeNames.get(group.storeId) ?? "店舗不明")
-      : "店舗不明",
-    productName:
-      group.productNames.size > 0
-        ? Array.from(group.productNames).join(" / ")
-        : "商品未設定",
-    expectedSales: group.expectedSales,
+    caseNumber: shortenCaseNumber(item.id, index),
+    applicationDate: item.applicationDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
+    storeName: storeNames.get(item.storeId) ?? "店舗不明",
+    productName: item.productName,
+    expectedSales: item.estimatedSales,
     constructionSchedule: normalizeConstructionSchedule(
-      group.constructionDate,
-      group.constructionDateNote
+      item.constructionDate,
+      item.constructionDateNote
     ),
   }));
 
+  const caseCountMatches = cases.length === person.personalActual;
+  const caseSalesTotal = cases.reduce(
+    (sum, item) => sum + (item.expectedSales ?? 0),
+    0
+  );
+  const salesTotalMatches =
+    cases.every((item) => item.expectedSales !== null) &&
+    caseSalesTotal === summary.expectedSales;
+
+  if (!caseCountMatches || !salesTotalMatches) {
+    console.warn("[dashboard] staff case reconciliation mismatch", {
+      personalActual: person.personalActual,
+      caseCount: cases.length,
+      rewardSalesTotal: summary.expectedSales,
+      caseSalesTotal,
+      hasUnsetSales: cases.some((item) => item.expectedSales === null),
+    });
+  }
+
   return {
     ...summary,
-    expectedSales: cases.reduce((sum, item) => sum + item.expectedSales, 0),
     targetMonth,
     cases,
+    caseCountMatches,
+    salesTotalMatches,
   };
 }

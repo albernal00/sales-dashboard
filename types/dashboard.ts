@@ -28,6 +28,17 @@ export type Reward = {
   status: RewardStatus;
 };
 
+export type SafeCase = {
+  id: string;
+  storeId: string;
+  staffId: string;
+  applicationDate: string;
+  productName: string;
+  constructionDate?: string;
+  constructionDateNote?: string;
+  estimatedSales: number | null;
+};
+
 export type DashboardKpis = {
   actual: number;
   target: number;
@@ -94,13 +105,15 @@ export type StaffCaseRow = {
   applicationDate?: string;
   storeName: string;
   productName: string;
-  expectedSales: number;
+  expectedSales: number | null;
   constructionSchedule: string;
 };
 
 export type StaffDetail = StaffListRow & {
   targetMonth: string;
   cases: StaffCaseRow[];
+  caseCountMatches: boolean;
+  salesTotalMatches: boolean;
 };
 
 export type StaffRankingRow = Staff & {
@@ -116,6 +129,7 @@ export type GasDashboardResponse = {
   stores: unknown[];
   staff: unknown[];
   rewards: unknown[] | Record<string, unknown>;
+  cases: unknown;
   warnings: unknown[];
   sourceHealth: unknown;
   updatedAt: string;
@@ -127,6 +141,7 @@ export type DashboardData = {
   stores: StorePerformance[];
   staff: Staff[];
   rewards: Reward[];
+  cases: SafeCase[];
   warnings: string[];
   sourceHealth: unknown;
   updatedAt: string;

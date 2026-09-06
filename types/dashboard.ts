@@ -39,6 +39,25 @@ export type SafeCase = {
   estimatedSales: number | null;
 };
 
+export type Appointment = {
+  id: string;
+  staffId: string;
+  storeId: string;
+  scheduledDate?: string;
+  status: string;
+  locationType?: string;
+};
+
+export type AppointmentRow = {
+  key: string;
+  scheduledDate?: string;
+  staffName: string;
+  storeName: string;
+  locationType: string;
+  status: string;
+  isProspect: boolean;
+};
+
 export type DashboardKpis = {
   actual: number;
   target: number;
@@ -67,6 +86,7 @@ export type StoreGoalStatus = "achieved" | "inProgress" | "zero" | "unregistered
 export type StoreListRow = StoreProgressRow & {
   storeId: string;
   goalStatus: StoreGoalStatus;
+  prospectCount: number;
 };
 
 export type StoreCaseRow = {
@@ -82,6 +102,7 @@ export type StoreRecordDetail = StoreListRow & {
   targetMonth: string;
   cases: StoreCaseRow[];
   caseCountMatches: boolean;
+  appointments: AppointmentRow[];
 };
 
 export type StaffListRow = {
@@ -96,6 +117,7 @@ export type StaffListRow = {
   progress: number;
   personalActual: number;
   expectedSales: number;
+  prospectCount: number;
   targetRegistered: boolean;
 };
 
@@ -114,6 +136,14 @@ export type StaffDetail = StaffListRow & {
   cases: StaffCaseRow[];
   caseCountMatches: boolean;
   salesTotalMatches: boolean;
+  appointments: AppointmentRow[];
+};
+
+export type AppointmentSummary = {
+  prospectCount: number;
+  upcomingCount: number;
+  staffCount: number;
+  storeCount: number;
 };
 
 export type StaffRankingRow = Staff & {
@@ -130,6 +160,7 @@ export type GasDashboardResponse = {
   staff: unknown[];
   rewards: unknown[] | Record<string, unknown>;
   cases: unknown;
+  appointments?: unknown;
   warnings: unknown[];
   sourceHealth: unknown;
   updatedAt: string;
@@ -142,6 +173,7 @@ export type DashboardData = {
   staff: Staff[];
   rewards: Reward[];
   cases: SafeCase[];
+  appointments: Appointment[];
   warnings: string[];
   sourceHealth: unknown;
   updatedAt: string;

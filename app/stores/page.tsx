@@ -25,6 +25,8 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
   const stores = createStoreListRows(
     dashboardData.stores,
     dashboardData.staff,
+    dashboardData.appointments,
+    dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );
 

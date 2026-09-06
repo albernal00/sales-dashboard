@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ChartNoAxesCombined, CircleCheckBig, Target, Trophy } from "lucide-react";
+import { ArrowLeft, CalendarClock, ChartNoAxesCombined, CircleCheckBig, Target, Trophy } from "lucide-react";
+import AppointmentsTable from "@/components/AppointmentsTable";
 import Header from "@/components/Header";
 import KpiCard from "@/components/KpiCard";
 import Sidebar from "@/components/Sidebar";
@@ -15,6 +16,7 @@ import {
 import {
   createMonthOptions,
   getTokyoCurrentMonth,
+  getTokyoToday,
   resolveTargetMonth,
 } from "@/lib/month";
 import type { StoreGoalStatus } from "@/types/dashboard";
@@ -59,6 +61,7 @@ export default async function StoreDetailPage({
     dashboardData.stores,
     dashboardData.staff,
     dashboardData.cases,
+    dashboardData.appointments,
     dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );
@@ -153,7 +156,7 @@ export default async function StoreDetailPage({
                   </div>
                 </section>
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                   <KpiCard
                     title="目標件数"
                     value={detail.goalStatus === "unregistered" ? "未登録" : formatCount(detail.target)}
@@ -181,6 +184,21 @@ export default async function StoreDetailPage({
                     subtext="店舗実績 ÷ 店舗目標"
                     icon={Trophy}
                     tone="amber"
+                  />
+                  <KpiCard
+                    title="見込み件数"
+                    value={formatCount(detail.prospectCount)}
+                    subtext="商談未完了の予定（実績外）"
+                    icon={CalendarClock}
+                    tone="violet"
+                  />
+                </div>
+
+                <div className="mt-5">
+                  <AppointmentsTable
+                    appointments={detail.appointments}
+                    today={getTokyoToday()}
+                    mode="store"
                   />
                 </div>
 

@@ -13,6 +13,15 @@ export function getTokyoCurrentMonth(date = new Date()): string {
   return `${year}-${month}`;
 }
 
+export function getTokyoToday(date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Tokyo",
+  }).format(date);
+}
+
 export function resolveTargetMonth(value: unknown, currentMonth: string): string {
   if (typeof value !== "string" || !MONTH_PATTERN.test(value)) {
     return currentMonth;

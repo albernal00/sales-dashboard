@@ -16,7 +16,7 @@ type StaffTableProps = {
   targetMonth: string;
 };
 
-type SortKey = "personal" | "sales" | "actual" | "progress" | "name";
+type SortKey = "personal" | "prospect" | "sales" | "actual" | "progress" | "name";
 
 export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,6 +42,9 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
       switch (sortKey) {
         case "sales":
           return b.expectedSales - a.expectedSales ||
+            b.personalActual - a.personalActual;
+        case "prospect":
+          return b.prospectCount - a.prospectCount ||
             b.personalActual - a.personalActual;
         case "actual":
           return b.actual - a.actual || b.personalActual - a.personalActual;
@@ -112,6 +115,7 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-3 focus:ring-blue-100"
               >
                 <option value="personal">個人獲得件数が多い順</option>
+                <option value="prospect">見込み件数が多い順</option>
                 <option value="sales">売上見込が多い順</option>
                 <option value="actual">担当店舗実績が多い順</option>
                 <option value="progress">担当店舗進捗率が高い順</option>
@@ -151,6 +155,7 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
                 <th scope="col" className="px-4 py-3.5 text-right">残数</th>
                 <th scope="col" className="min-w-48 px-4 py-3.5">店舗進捗率</th>
                 <th scope="col" className="px-4 py-3.5 text-right">個人獲得件数</th>
+                <th scope="col" className="px-4 py-3.5 text-right">見込み件数</th>
                 <th scope="col" className="px-6 py-3.5 text-right">売上見込</th>
               </tr>
             </thead>
@@ -241,6 +246,9 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
                   </td>
                   <td className="px-4 py-4 text-right font-bold tabular-nums text-blue-700">
                     {formatCount(person.personalActual)}
+                  </td>
+                  <td className="px-4 py-4 text-right font-semibold tabular-nums text-violet-700">
+                    {formatCount(person.prospectCount)}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right font-semibold tabular-nums text-slate-800">
                     {formatCurrency(person.expectedSales)}

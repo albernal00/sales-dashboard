@@ -1,4 +1,7 @@
 import type {
+  Appointment,
+  AppointmentRow,
+  AppointmentSummary,
   DashboardKpis,
   Reward,
   SafeCase,
@@ -12,6 +15,76 @@ import type {
   StorePerformance,
   StoreProgressRow,
 } from "@/types/dashboard";
+
+export function isProspectAppointment(appointment: Appointment): boolean {
+  return appointment.status === "商談未完了";
+}
+
+function isAppointmentInMonth(
+  appointment: Appointment,
+  targetMonth: string
+): boolean {
+  return (
+    !appointment.scheduledDate ||
+    appointment.scheduledDate.startsWith(targetMonth)
+  );
+}
+
+export function createAppointmentRows(
+  appointments: Appointment[],
+  staff: Staff[],
+  stores: StorePerformance[],
+  targetMonth: string
+): AppointmentRow[] {
+  const staffNames = new Map(staff.map((person) => [person.id, person.name]));
+  const storeNames = new Map(stores.map((store) => [store.id, store.name]));
+
+  return appointments
+    .filter((appointment) => isAppointmentInMonth(appointment, targetMonth))
+    .map((appointment, index) => ({
+      key: `appointment-${index + 1}`,
+      scheduledDate: appointment.scheduledDate?.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
+      staffName: staffNames.get(appointment.staffId) ?? "担当者不明",
+      storeName: storeNames.get(appointment.storeId) ?? "店舗不明",
+      locationType: appointment.locationType ?? "場所未設定",
+      status: appointment.status,
+      isProspect: isProspectAppointment(appointment),
+    }));
+}
+
+export function calculateAppointmentSummary(
+  rows: AppointmentRow[],
+  today: string
+): AppointmentSummary {
+  const prospects = rows.filter((row) => row.isProspect);
+  return {
+    prospectCount: prospects.length,
+    upcomingCount: prospects.filter(
+      (row) => row.scheduledDate && row.scheduledDate >= today
+    ).length,
+    staffCount: new Set(prospects.map((row) => row.staffName)).size,
+    storeCount: new Set(prospects.map((row) => row.storeName)).size,
+  };
+}
+
+function countProspectsBy(
+  appointments: Appointment[],
+  targetMonth: string,
+  getId: (appointment: Appointment) => string
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const appointment of appointments) {
+    if (
+      !isProspectAppointment(appointment) ||
+      !isAppointmentInMonth(appointment, targetMonth)
+    ) {
+      continue;
+    }
+    const id = getId(appointment);
+    if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return counts;
+}
 
 export function calculateProgress(actual: number, target: number): number {
   if (target <= 0) {
@@ -92,9 +165,16 @@ export function createStoreDetails(
 export function createStoreListRows(
   stores: StorePerformance[],
   staff: Staff[],
+  appointments: Appointment[],
+  targetMonth: string,
   targetDataAvailable: boolean
 ): StoreListRow[] {
   const progressRows = createStoreProgressRows(stores, staff);
+  const prospectCounts = countProspectsBy(
+    appointments,
+    targetMonth,
+    (appointment) => appointment.storeId
+  );
 
   return progressRows.map((row, index) => {
     const goalStatus = !targetDataAvailable
@@ -109,6 +189,7 @@ export function createStoreListRows(
       ...row,
       storeId: stores[index].id,
       goalStatus,
+      prospectCount: prospectCounts.get(stores[index].id) ?? 0,
     };
   });
 }
@@ -118,6 +199,7 @@ export function createStoreRecordDetail(
   stores: StorePerformance[],
   staff: Staff[],
   casesData: SafeCase[],
+  appointments: Appointment[],
   targetMonth: string,
   targetDataAvailable: boolean
 ): StoreRecordDetail | undefined {
@@ -127,6 +209,8 @@ export function createStoreRecordDetail(
   const summary = createStoreListRows(
     [stores[storeIndex]],
     staff,
+    appointments,
+    targetMonth,
     targetDataAvailable
   )[0];
   const staffNames = new Map(staff.map((person) => [person.id, person.name]));
@@ -159,6 +243,12 @@ export function createStoreRecordDetail(
     targetMonth,
     cases,
     caseCountMatches,
+    appointments: createAppointmentRows(
+      appointments.filter((appointment) => appointment.storeId === storeId),
+      staff,
+      stores,
+      targetMonth
+    ),
   };
 }
 
@@ -184,6 +274,8 @@ export function createStaffListRows(
   staff: Staff[],
   stores: StorePerformance[],
   rewards: Reward[],
+  appointments: Appointment[],
+  targetMonth: string,
   targetDataAvailable: boolean
 ): StaffListRow[] {
   const rewardTotals = rewards.reduce<Map<string, number>>((totals, reward) => {
@@ -191,6 +283,11 @@ export function createStaffListRows(
     totals.set(reward.staffId, (totals.get(reward.staffId) ?? 0) + reward.amount);
     return totals;
   }, new Map());
+  const prospectCounts = countProspectsBy(
+    appointments,
+    targetMonth,
+    (appointment) => appointment.staffId
+  );
 
   return staff.map((person, index) => {
     const assignedStores = stores.filter((store) => store.staffId === person.id);
@@ -209,6 +306,7 @@ export function createStaffListRows(
       progress: calculateProgress(actual, target),
       personalActual: person.personalActual,
       expectedSales: rewardTotals.get(person.id) ?? 0,
+      prospectCount: prospectCounts.get(person.id) ?? 0,
       targetRegistered: targetDataAvailable,
     };
   });
@@ -245,6 +343,7 @@ export function createStaffDetail(
   stores: StorePerformance[],
   rewards: Reward[],
   casesData: SafeCase[],
+  appointments: Appointment[],
   targetMonth: string,
   targetDataAvailable: boolean
 ): StaffDetail | undefined {
@@ -255,6 +354,8 @@ export function createStaffDetail(
     [person],
     stores,
     rewards,
+    appointments,
+    targetMonth,
     targetDataAvailable
   )[0];
   const storeNames = new Map(stores.map((store) => [store.id, store.name]));
@@ -300,5 +401,11 @@ export function createStaffDetail(
     cases,
     caseCountMatches,
     salesTotalMatches,
+    appointments: createAppointmentRows(
+      appointments.filter((appointment) => appointment.staffId === staffId),
+      staff,
+      stores,
+      targetMonth
+    ),
   };
 }

@@ -26,6 +26,8 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
     dashboardData.staff,
     dashboardData.stores,
     dashboardData.rewards,
+    dashboardData.appointments,
+    dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );
 

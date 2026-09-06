@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BadgeJapaneseYen, ChartNoAxesCombined, Target, Trophy } from "lucide-react";
+import { ArrowLeft, BadgeJapaneseYen, CalendarClock, ChartNoAxesCombined, Target, Trophy } from "lucide-react";
+import AppointmentsTable from "@/components/AppointmentsTable";
 import Header from "@/components/Header";
 import KpiCard from "@/components/KpiCard";
 import Sidebar from "@/components/Sidebar";
@@ -16,6 +17,7 @@ import {
 import {
   createMonthOptions,
   getTokyoCurrentMonth,
+  getTokyoToday,
   resolveTargetMonth,
 } from "@/lib/month";
 
@@ -38,6 +40,7 @@ export default async function StaffDetailPage({
     dashboardData.stores,
     dashboardData.rewards,
     dashboardData.cases,
+    dashboardData.appointments,
     dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );
@@ -107,7 +110,7 @@ export default async function StaffDetailPage({
               </div>
             </section>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <KpiCard
                 title="個人獲得件数"
                 value={formatCount(detail.personalActual)}
@@ -135,6 +138,21 @@ export default async function StaffDetailPage({
                 subtext={`担当店舗実績 ${formatCount(detail.actual)}`}
                 icon={Trophy}
                 tone="amber"
+              />
+              <KpiCard
+                title="見込み件数"
+                value={formatCount(detail.prospectCount)}
+                subtext="本人受付の商談未完了予定（実績外）"
+                icon={CalendarClock}
+                tone="violet"
+              />
+            </div>
+
+            <div className="mt-5">
+              <AppointmentsTable
+                appointments={detail.appointments}
+                today={getTokyoToday()}
+                mode="staff"
               />
             </div>
 

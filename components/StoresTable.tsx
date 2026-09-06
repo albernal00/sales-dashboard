@@ -14,7 +14,7 @@ type StoresTableProps = {
   targetMonth: string;
 };
 
-type SortKey = "actual" | "progress" | "remaining" | "name";
+type SortKey = "actual" | "prospect" | "progress" | "remaining" | "name";
 
 const statusStyles: Record<
   StoreGoalStatus,
@@ -64,6 +64,8 @@ export default function StoresTable({ stores, targetMonth }: StoresTableProps) {
           return b.progress - a.progress || b.actual - a.actual;
         case "remaining":
           return b.remaining - a.remaining || b.actual - a.actual;
+        case "prospect":
+          return b.prospectCount - a.prospectCount || b.actual - a.actual;
         case "name":
           return a.name.localeCompare(b.name, "ja");
         default:
@@ -128,6 +130,7 @@ export default function StoresTable({ stores, targetMonth }: StoresTableProps) {
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-3 focus:ring-blue-100"
               >
                 <option value="actual">実績が多い順</option>
+                <option value="prospect">見込み件数が多い順</option>
                 <option value="progress">進捗率が高い順</option>
                 <option value="remaining">残数が多い順</option>
                 <option value="name">店舗名順</option>
@@ -162,6 +165,7 @@ export default function StoresTable({ stores, targetMonth }: StoresTableProps) {
                 <th scope="col" className="px-4 py-3.5">担当者</th>
                 <th scope="col" className="px-4 py-3.5 text-right">目標</th>
                 <th scope="col" className="px-4 py-3.5 text-right">実績</th>
+                <th scope="col" className="px-4 py-3.5 text-right">見込み件数</th>
                 <th scope="col" className="px-4 py-3.5 text-right">残数</th>
                 <th scope="col" className="min-w-48 px-4 py-3.5">進捗率</th>
                 <th scope="col" className="px-6 py-3.5">目標達成状況</th>
@@ -207,6 +211,9 @@ export default function StoresTable({ stores, targetMonth }: StoresTableProps) {
                     </td>
                     <td className="px-4 py-4 text-right font-semibold tabular-nums text-slate-900">
                       {formatCount(store.actual)}
+                    </td>
+                    <td className="px-4 py-4 text-right font-semibold tabular-nums text-violet-700">
+                      {formatCount(store.prospectCount)}
                     </td>
                     <td className="px-4 py-4 text-right tabular-nums text-slate-600">
                       {formatCount(store.remaining)}

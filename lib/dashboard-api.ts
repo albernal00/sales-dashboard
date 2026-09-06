@@ -5,6 +5,7 @@ import { rewards as fallbackRewards } from "@/data/rewards";
 import { staff as fallbackStaff } from "@/data/staff";
 import { stores as fallbackStores } from "@/data/stores";
 import type {
+  Appointment,
   DashboardData,
   GasDashboardResponse,
   Reward,
@@ -352,6 +353,45 @@ function normalizeCases(value: unknown): SafeCase[] {
   return cases;
 }
 
+function normalizeAppointments(value: unknown): Appointment[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    console.warn("[dashboard-api] validation_warning", {
+      section: "appointments",
+      reason: "APPOINTMENTS_NOT_ARRAY",
+    });
+    return [];
+  }
+
+  const appointments = value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+
+    const id = getString(item, ["id"]);
+    const status = getString(item, ["status"]);
+    const scheduledDate = getString(item, ["scheduledDate"]);
+    if (
+      !id ||
+      !status ||
+      (scheduledDate !== undefined &&
+        !/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])(?:T|$)/.test(scheduledDate))
+    ) {
+      return [];
+    }
+
+    return [{
+      id,
+      staffId: getString(item, ["staffId"]) ?? "",
+      storeId: getString(item, ["storeId"]) ?? "",
+      scheduledDate,
+      status,
+      locationType: getString(item, ["locationType"]),
+    }];
+  });
+
+  logValidationResult("appointments", value.length, appointments.length);
+  return appointments;
+}
+
 function normalizeResponse(value: unknown, requestedMonth: string): DashboardData {
   if (!isRecord(value)) throw new DashboardApiError("RESPONSE_NOT_OBJECT");
 
@@ -379,6 +419,7 @@ function normalizeResponse(value: unknown, requestedMonth: string): DashboardDat
     staff: normalizeStaff(response.staff),
     rewards: normalizeRewards(response.rewards),
     cases: normalizeCases(response.cases),
+    appointments: normalizeAppointments(response.appointments),
     warnings: Array.isArray(response.warnings)
       ? response.warnings.filter((warning): warning is string => typeof warning === "string")
       : [],
@@ -397,6 +438,7 @@ function getFallbackData(targetMonth: string): DashboardData {
     staff: fallbackStaff,
     rewards: fallbackRewards,
     cases: [],
+    appointments: [],
     warnings: ["GAS APIからデータを取得できませんでした。"],
     sourceHealth: null,
     updatedAt: FALLBACK_UPDATED_AT,
@@ -472,6 +514,7 @@ export async function getDashboardData(targetMonth: string): Promise<DashboardDa
         staffCount: data.staff.length,
         rewardCount: data.rewards.length,
         caseCount: data.cases.length,
+        appointmentCount: data.appointments.length,
       });
     }
     return data;

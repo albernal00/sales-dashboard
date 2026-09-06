@@ -20,6 +20,10 @@ export function isProspectAppointment(appointment: Appointment): boolean {
   return appointment.status === "商談未完了";
 }
 
+function isCompletedAppointment(appointment: Appointment): boolean {
+  return appointment.status === "商談完了";
+}
+
 function isAppointmentInMonth(
   appointment: Appointment,
   targetMonth: string
@@ -40,7 +44,11 @@ export function createAppointmentRows(
   const storeNames = new Map(stores.map((store) => [store.id, store.name]));
 
   return appointments
-    .filter((appointment) => isAppointmentInMonth(appointment, targetMonth))
+    .filter(
+      (appointment) =>
+        isAppointmentInMonth(appointment, targetMonth) &&
+        !isCompletedAppointment(appointment)
+    )
     .map((appointment, index) => ({
       key: `appointment-${index + 1}`,
       scheduledDate: appointment.scheduledDate?.match(/^\d{4}-\d{2}-\d{2}/)?.[0],

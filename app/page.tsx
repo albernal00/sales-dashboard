@@ -22,12 +22,15 @@ import {
   getTokyoCurrentMonth,
   resolveTargetMonth,
 } from "@/lib/month";
+import { requirePageUser } from "@/lib/auth";
 
 type HomeProps = {
   searchParams: Promise<{ month?: string | string[] }>;
 };
 
 export default async function Home({ searchParams }: HomeProps) {
+  const currentUser = await requirePageUser();
+  const canViewSales = currentUser.role === "admin";
   const currentMonth = getTokyoCurrentMonth();
   const query = await searchParams;
   const requestedMonth = resolveTargetMonth(query.month, currentMonth);
@@ -38,7 +41,7 @@ export default async function Home({ searchParams }: HomeProps) {
   );
   const kpis = calculateDashboardKpis(
     dashboardData.stores,
-    dashboardData.rewards
+    canViewSales ? dashboardData.rewards : []
   );
   const storeRows = createStoreProgressRows(
     dashboardData.stores,
@@ -51,7 +54,8 @@ export default async function Home({ searchParams }: HomeProps) {
   );
   const staffRanking = createStaffRanking(
     dashboardData.staff,
-    dashboardData.rewards
+    canViewSales ? dashboardData.rewards : [],
+    canViewSales
   );
 
   return (
@@ -65,6 +69,7 @@ export default async function Home({ searchParams }: HomeProps) {
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}
           monthOptions={monthOptions}
+          currentUser={{ name: currentUser.name, role: currentUser.role }}
         />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -77,7 +82,7 @@ export default async function Home({ searchParams }: HomeProps) {
               この月の目標データは登録されていません
             </div>
           )}
-          <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+          <div className={`grid gap-4 sm:grid-cols-2 ${canViewSales ? "2xl:grid-cols-4" : "2xl:grid-cols-3"}`}>
             <KpiCard
               title="今月実績"
               value={formatCount(kpis.actual)}
@@ -102,13 +107,15 @@ export default async function Home({ searchParams }: HomeProps) {
               tone="amber"
             />
 
-            <KpiCard
-              title="売上見込"
-              value={formatCurrency(kpis.expectedSales)}
-              subtext="対象月のキャンセル以外の申込案件の入り単価合計"
-              icon={BadgeJapaneseYen}
-              tone="emerald"
-            />
+            {canViewSales && (
+              <KpiCard
+                title="売上見込"
+                value={formatCurrency(kpis.expectedSales)}
+                subtext="対象月のキャンセル以外の申込案件の入り単価合計"
+                icon={BadgeJapaneseYen}
+                tone="emerald"
+              />
+            )}
           </div>
 
           <div className="mt-5 grid gap-5 2xl:grid-cols-3">
@@ -120,7 +127,7 @@ export default async function Home({ searchParams }: HomeProps) {
               />
             </div>
 
-            <StaffRanking staff={staffRanking} />
+            <StaffRanking staff={staffRanking} canViewSales={canViewSales} />
           </div>
           </div>
         </main>

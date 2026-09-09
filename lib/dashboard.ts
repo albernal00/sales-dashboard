@@ -262,7 +262,8 @@ export function createStoreRecordDetail(
 
 export function createStaffRanking(
   staff: Staff[],
-  rewards: Reward[]
+  rewards: Reward[],
+  includeSales = true
 ): StaffRankingRow[] {
   const rewardTotals = rewards.reduce<Map<string, number>>((totals, reward) => {
     totals.set(reward.staffId, (totals.get(reward.staffId) ?? 0) + reward.amount);
@@ -273,9 +274,9 @@ export function createStaffRanking(
     .map((person) => ({
       ...person,
       count: person.personalActual,
-      sales: rewardTotals.get(person.id) ?? 0,
+      ...(includeSales ? { sales: rewardTotals.get(person.id) ?? 0 } : {}),
     }))
-    .sort((a, b) => b.count - a.count || b.sales - a.sales);
+    .sort((a, b) => b.count - a.count || (b.sales ?? 0) - (a.sales ?? 0));
 }
 
 export function createStaffListRows(
@@ -353,7 +354,8 @@ export function createStaffDetail(
   casesData: SafeCase[],
   appointments: Appointment[],
   targetMonth: string,
-  targetDataAvailable: boolean
+  targetDataAvailable: boolean,
+  includeSales = true
 ): StaffDetail | undefined {
   const person = staff.find((candidate) => candidate.id === staffId);
   if (!person) return undefined;
@@ -389,11 +391,12 @@ export function createStaffDetail(
     (sum, item) => sum + (item.expectedSales ?? 0),
     0
   );
-  const salesTotalMatches =
+  const salesTotalMatches = !includeSales || (
     cases.every((item) => item.expectedSales !== null) &&
-    caseSalesTotal === summary.expectedSales;
+    caseSalesTotal === summary.expectedSales
+  );
 
-  if (!caseCountMatches || !salesTotalMatches) {
+  if (!caseCountMatches || (includeSales && !salesTotalMatches)) {
     console.warn("[dashboard] staff case reconciliation mismatch", {
       personalActual: person.personalActual,
       caseCount: cases.length,

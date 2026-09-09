@@ -8,12 +8,14 @@ import {
   getTokyoCurrentMonth,
   resolveTargetMonth,
 } from "@/lib/month";
+import { requirePageUser } from "@/lib/auth";
 
 type StoresPageProps = {
   searchParams: Promise<{ month?: string | string[] }>;
 };
 
 export default async function StoresPage({ searchParams }: StoresPageProps) {
+  const currentUser = await requirePageUser();
   const currentMonth = getTokyoCurrentMonth();
   const query = await searchParams;
   const requestedMonth = resolveTargetMonth(query.month, currentMonth);
@@ -43,6 +45,7 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}
           monthOptions={monthOptions}
+          currentUser={{ name: currentUser.name, role: currentUser.role }}
         />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

@@ -9,22 +9,29 @@ import {
   formatPercent,
   formatStoreCount,
 } from "@/lib/formatters";
-import type { StaffListRow } from "@/types/dashboard";
+import type { StaffTableRow } from "@/types/dashboard";
 
 type StaffTableProps = {
-  staff: StaffListRow[];
+  staff: StaffTableRow[];
   targetMonth: string;
+  canViewSales: boolean;
+  viewerStaffId?: string;
 };
 
 type SortKey = "personal" | "prospect" | "sales" | "actual" | "progress" | "name";
 
-export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
+export default function StaffTable({
+  staff,
+  targetMonth,
+  canViewSales,
+  viewerStaffId,
+}: StaffTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [storeFilter, setStoreFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("personal");
   const storeOptions = useMemo(
     () =>
-      Array.from(new Set(staff.flatMap((person) => person.storeNames))).sort(
+      Array.from(new Set(staff.flatMap((person) => person.storeNames ?? []))).sort(
         (a, b) => a.localeCompare(b, "ja")
       ),
     [staff]
@@ -35,26 +42,26 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
       (person) =>
         (!normalizedQuery ||
           person.name.toLocaleLowerCase("ja").includes(normalizedQuery)) &&
-        (storeFilter === "all" || person.storeNames.includes(storeFilter))
+        (storeFilter === "all" || person.storeNames?.includes(storeFilter))
     );
 
     return filtered.toSorted((a, b) => {
       switch (sortKey) {
         case "sales":
-          return b.expectedSales - a.expectedSales ||
+          return (b.expectedSales ?? 0) - (a.expectedSales ?? 0) ||
             b.personalActual - a.personalActual;
         case "prospect":
           return b.prospectCount - a.prospectCount ||
             b.personalActual - a.personalActual;
         case "actual":
-          return b.actual - a.actual || b.personalActual - a.personalActual;
+          return (b.actual ?? 0) - (a.actual ?? 0) || b.personalActual - a.personalActual;
         case "progress":
-          return b.progress - a.progress || b.actual - a.actual;
+          return (b.progress ?? 0) - (a.progress ?? 0) || (b.actual ?? 0) - (a.actual ?? 0);
         case "name":
           return a.name.localeCompare(b.name, "ja");
         default:
           return b.personalActual - a.personalActual ||
-            b.expectedSales - a.expectedSales;
+            (b.expectedSales ?? 0) - (a.expectedSales ?? 0);
       }
     });
   }, [searchQuery, sortKey, staff, storeFilter]);
@@ -66,12 +73,14 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">担当者一覧</h2>
             <p className="mt-0.5 text-xs text-slate-400">
-              担当店舗の進捗と個人実績を比較できます
+              {canViewSales
+                ? "担当店舗の進捗と個人実績を比較できます"
+                : "担当者ごとの獲得件数と見込み件数を確認できます"}
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <label className="block">
+          <div className={`grid gap-3 ${canViewSales ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+            {canViewSales && <label className="block">
               <span className="mb-1.5 block text-xs font-semibold text-slate-600">
                 担当者名検索
               </span>
@@ -85,7 +94,7 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
                   className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                 />
               </span>
-            </label>
+            </label>}
 
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold text-slate-600">
@@ -116,9 +125,9 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
               >
                 <option value="personal">個人獲得件数が多い順</option>
                 <option value="prospect">見込み件数が多い順</option>
-                <option value="sales">売上見込が多い順</option>
-                <option value="actual">担当店舗実績が多い順</option>
-                <option value="progress">担当店舗進捗率が高い順</option>
+                {canViewSales && <option value="sales">売上見込が多い順</option>}
+                {canViewSales && <option value="actual">担当店舗実績が多い順</option>}
+                {canViewSales && <option value="progress">担当店舗進捗率が高い順</option>}
                 <option value="name">担当者名順</option>
               </select>
             </label>
@@ -144,35 +153,38 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1320px] text-sm">
+          <table className={`w-full text-sm ${canViewSales ? "min-w-[1400px]" : "min-w-[560px]"}`}>
             <thead className="bg-slate-50/80">
               <tr className="border-b border-slate-200 text-left text-[11px] font-semibold text-slate-500">
                 <th scope="col" className="px-6 py-3.5">担当者名</th>
-                <th scope="col" className="px-4 py-3.5 text-right">担当店舗数</th>
-                <th scope="col" className="min-w-56 px-4 py-3.5">担当店舗名</th>
-                <th scope="col" className="px-4 py-3.5 text-right">店舗目標</th>
-                <th scope="col" className="px-4 py-3.5 text-right">店舗実績</th>
-                <th scope="col" className="px-4 py-3.5 text-right">残数</th>
-                <th scope="col" className="min-w-48 px-4 py-3.5">店舗進捗率</th>
+                {canViewSales && <th scope="col" className="px-4 py-3.5 text-right">担当店舗数</th>}
+                {canViewSales && <th scope="col" className="min-w-56 px-4 py-3.5">担当店舗名</th>}
+                {canViewSales && <th scope="col" className="px-4 py-3.5 text-right">店舗目標</th>}
+                {canViewSales && <th scope="col" className="px-4 py-3.5 text-right">店舗実績</th>}
+                {canViewSales && <th scope="col" className="px-4 py-3.5 text-right">残数</th>}
+                {canViewSales && <th scope="col" className="min-w-48 px-4 py-3.5">店舗進捗率</th>}
                 <th scope="col" className="px-4 py-3.5 text-right">個人獲得件数</th>
                 <th scope="col" className="px-4 py-3.5 text-right">見込み件数</th>
-                <th scope="col" className="px-6 py-3.5 text-right">売上見込</th>
+                {canViewSales && <th scope="col" className="px-6 py-3.5 text-right">売上見込</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {visibleStaff.map((person) => (
+              {visibleStaff.map((person) => {
+                const canOpenDetail = canViewSales || person.staffId === viewerStaffId;
+                return (
                 <tr
                   key={person.key}
                   data-staff-key={person.key}
                   onClick={(event) => {
+                    if (!canOpenDetail) return;
                     const target = event.target as HTMLElement;
                     if (target.closest("a, button, input, select, textarea")) return;
                     event.currentTarget.querySelector<HTMLAnchorElement>("a")?.click();
                   }}
-                  className="cursor-pointer transition hover:bg-slate-50/70"
+                  className={`${canOpenDetail ? "cursor-pointer" : "cursor-default"} transition hover:bg-slate-50/70`}
                 >
                   <th scope="row" className="whitespace-nowrap px-6 py-4 text-left font-semibold text-slate-800">
-                    <Link
+                    {canOpenDetail ? <Link
                       href={{
                         pathname: `/staff/${encodeURIComponent(person.staffId)}`,
                         query: { month: targetMonth },
@@ -186,17 +198,17 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
                         className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-500"
                         aria-hidden="true"
                       />
-                    </Link>
+                    </Link> : <span>{person.name}</span>}
                   </th>
-                  <td className="px-4 py-4 text-right tabular-nums text-slate-600">
-                    {formatStoreCount(person.storeCount)}
-                  </td>
-                  <td className="px-4 py-4">
-                    {person.storeNames.length === 0 ? (
+                  {canViewSales && <td className="px-4 py-4 text-right tabular-nums text-slate-600">
+                    {formatStoreCount(person.storeCount ?? 0)}
+                  </td>}
+                  {canViewSales && <td className="px-4 py-4">
+                    {(person.storeNames ?? []).length === 0 ? (
                       <span className="text-xs text-slate-400">担当店舗なし</span>
                     ) : (
                       <div className="flex max-w-xs flex-wrap gap-1.5">
-                        {person.storeNames.map((storeName) => (
+                        {(person.storeNames ?? []).map((storeName) => (
                           <span
                             key={storeName}
                             className="inline-flex rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600"
@@ -206,23 +218,23 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
                         ))}
                       </div>
                     )}
-                  </td>
-                  <td className="px-4 py-4 text-right tabular-nums text-slate-500">
+                  </td>}
+                  {canViewSales && <td className="px-4 py-4 text-right tabular-nums text-slate-500">
                     {person.targetRegistered ? (
-                      formatCount(person.target)
+                      formatCount(person.target ?? 0)
                     ) : (
                       <span className="whitespace-nowrap text-xs font-semibold text-amber-700">
                         未登録
                       </span>
                     )}
-                  </td>
-                  <td className="px-4 py-4 text-right font-semibold tabular-nums text-slate-900">
-                    {formatCount(person.actual)}
-                  </td>
-                  <td className="px-4 py-4 text-right tabular-nums text-slate-600">
-                    {person.targetRegistered ? formatCount(person.remaining) : "—"}
-                  </td>
-                  <td className="px-4 py-4">
+                  </td>}
+                  {canViewSales && <td className="px-4 py-4 text-right font-semibold tabular-nums text-slate-900">
+                    {formatCount(person.actual ?? 0)}
+                  </td>}
+                  {canViewSales && <td className="px-4 py-4 text-right tabular-nums text-slate-600">
+                    {person.targetRegistered ? formatCount(person.remaining ?? 0) : "—"}
+                  </td>}
+                  {canViewSales && <td className="px-4 py-4">
                     {person.targetRegistered ? (
                       <div className="flex items-center gap-3">
                         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
@@ -231,30 +243,31 @@ export default function StaffTable({ staff, targetMonth }: StaffTableProps) {
                             aria-label={`${person.name}の担当店舗進捗率`}
                             aria-valuemin={0}
                             aria-valuemax={100}
-                            aria-valuenow={Math.round(person.progress)}
+                            aria-valuenow={Math.round(person.progress ?? 0)}
                             className="h-full rounded-full bg-blue-500"
-                            style={{ width: `${person.progress}%` }}
+                            style={{ width: `${person.progress ?? 0}%` }}
                           />
                         </div>
                         <span className="w-11 text-right text-xs font-semibold tabular-nums text-slate-600">
-                          {formatPercent(person.progress, 0)}
+                          {formatPercent(person.progress ?? 0, 0)}
                         </span>
                       </div>
                     ) : (
                       <span className="text-xs text-slate-400">—</span>
                     )}
-                  </td>
+                  </td>}
                   <td className="px-4 py-4 text-right font-bold tabular-nums text-blue-700">
                     {formatCount(person.personalActual)}
                   </td>
                   <td className="px-4 py-4 text-right font-semibold tabular-nums text-violet-700">
                     {formatCount(person.prospectCount)}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right font-semibold tabular-nums text-slate-800">
-                    {formatCurrency(person.expectedSales)}
-                  </td>
+                  {canViewSales && <td className="whitespace-nowrap px-6 py-4 text-right font-semibold tabular-nums text-slate-800">
+                    {formatCurrency(person.expectedSales ?? 0)}
+                  </td>}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -3,9 +3,10 @@ import type { StaffRankingRow } from "@/types/dashboard";
 
 type StaffRankingProps = {
   staff: StaffRankingRow[];
+  canViewSales: boolean;
 };
 
-export default function StaffRanking({ staff }: StaffRankingProps) {
+export default function StaffRanking({ staff, canViewSales }: StaffRankingProps) {
   return (
     <section className="h-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
@@ -38,9 +39,11 @@ export default function StaffRanking({ staff }: StaffRankingProps) {
               </div>
             </div>
 
-            <p className="text-sm font-bold tabular-nums text-slate-800">
-              {formatCurrency(person.sales, "symbol")}
-            </p>
+            {canViewSales && person.sales !== undefined && (
+              <p className="text-sm font-bold tabular-nums text-slate-800">
+                {formatCurrency(person.sales, "symbol")}
+              </p>
+            )}
           </div>
         ))}
       </div>

@@ -121,13 +121,18 @@ export type StaffListRow = {
   targetRegistered: boolean;
 };
 
+export type StaffTableRow = Pick<
+  StaffListRow,
+  "staffId" | "key" | "name" | "personalActual" | "prospectCount"
+> & Partial<Omit<StaffListRow, "staffId" | "key" | "name" | "personalActual" | "prospectCount">>;
+
 export type StaffCaseRow = {
   key: string;
   caseNumber: string;
   applicationDate?: string;
   storeName: string;
   productName: string;
-  expectedSales: number | null;
+  expectedSales?: number | null;
   constructionSchedule: string;
 };
 
@@ -148,7 +153,7 @@ export type AppointmentSummary = {
 
 export type StaffRankingRow = Staff & {
   count: number;
-  sales: number;
+  sales?: number;
 };
 
 export type GasDashboardStatus = "ok" | "success" | "warning";

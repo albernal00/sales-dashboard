@@ -12,19 +12,26 @@ import {
   getTokyoToday,
   resolveTargetMonth,
 } from "@/lib/month";
+import { requirePageUser } from "@/lib/auth";
 
 type AppointmentsPageProps = {
   searchParams: Promise<{ month?: string | string[] }>;
 };
 
 export default async function AppointmentsPage({ searchParams }: AppointmentsPageProps) {
+  const currentUser = await requirePageUser();
   const currentMonth = getTokyoCurrentMonth();
   const query = await searchParams;
   const requestedMonth = resolveTargetMonth(query.month, currentMonth);
   const dashboardData = await getDashboardData(requestedMonth);
   const monthOptions = createMonthOptions(currentMonth, dashboardData.targetMonth);
+  const visibleAppointments = currentUser.role === "admin"
+    ? dashboardData.appointments
+    : dashboardData.appointments.filter(
+        (appointment) => appointment.staffId === currentUser.staffId
+      );
   const appointments = createAppointmentRows(
-    dashboardData.appointments,
+    visibleAppointments,
     dashboardData.staff,
     dashboardData.stores,
     dashboardData.targetMonth
@@ -44,6 +51,7 @@ export default async function AppointmentsPage({ searchParams }: AppointmentsPag
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}
           monthOptions={monthOptions}
+          currentUser={{ name: currentUser.name, role: currentUser.role }}
         />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1600px]">

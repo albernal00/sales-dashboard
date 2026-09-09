@@ -9,6 +9,7 @@ type StaffCasesTableProps = {
   cases: StaffCaseRow[];
   caseCountMatches: boolean;
   salesTotalMatches: boolean;
+  canViewSales: boolean;
 };
 
 type SortKey = "dateDesc" | "dateAsc" | "salesDesc" | "salesAsc";
@@ -17,6 +18,7 @@ export default function StaffCasesTable({
   cases,
   caseCountMatches,
   salesTotalMatches,
+  canViewSales,
 }: StaffCasesTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("dateDesc");
@@ -30,9 +32,9 @@ export default function StaffCasesTable({
     );
 
     return filtered.toSorted((a, b) => {
-      if (sortKey === "salesDesc" || sortKey === "salesAsc") {
-        if (a.expectedSales === null) return 1;
-        if (b.expectedSales === null) return -1;
+      if (canViewSales && (sortKey === "salesDesc" || sortKey === "salesAsc")) {
+        if (a.expectedSales == null) return 1;
+        if (b.expectedSales == null) return -1;
         return sortKey === "salesDesc"
           ? b.expectedSales - a.expectedSales
           : a.expectedSales - b.expectedSales;
@@ -46,7 +48,7 @@ export default function StaffCasesTable({
         ? aDate.localeCompare(bDate)
         : bDate.localeCompare(aDate);
     });
-  }, [cases, searchQuery, sortKey]);
+  }, [canViewSales, cases, searchQuery, sortKey]);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
@@ -55,7 +57,7 @@ export default function StaffCasesTable({
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">案件一覧</h2>
             <p className="mt-0.5 text-xs text-slate-400">
-              対象月の申込案件と売上見込
+              {canViewSales ? "対象月の申込案件と売上見込" : "対象月の申込案件"}
             </p>
           </div>
 
@@ -87,8 +89,8 @@ export default function StaffCasesTable({
               >
                 <option value="dateDesc">申込日が新しい順</option>
                 <option value="dateAsc">申込日が古い順</option>
-                <option value="salesDesc">売上見込が高い順</option>
-                <option value="salesAsc">売上見込が低い順</option>
+                {canViewSales && <option value="salesDesc">売上見込が高い順</option>}
+                {canViewSales && <option value="salesAsc">売上見込が低い順</option>}
               </select>
             </label>
           </div>
@@ -99,7 +101,7 @@ export default function StaffCasesTable({
         </p>
       </div>
 
-      {(!caseCountMatches || !salesTotalMatches) && (
+      {(!caseCountMatches || (canViewSales && !salesTotalMatches)) && (
         <div
           role="status"
           className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-800 sm:px-6"
@@ -126,14 +128,14 @@ export default function StaffCasesTable({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className={`w-full text-sm ${canViewSales ? "min-w-[980px]" : "min-w-[820px]"}`}>
             <thead className="bg-slate-50/80">
               <tr className="border-b border-slate-200 text-left text-[11px] font-semibold text-slate-500">
                 <th scope="col" className="px-6 py-3.5">案件番号</th>
                 <th scope="col" className="px-4 py-3.5">申込日</th>
                 <th scope="col" className="px-4 py-3.5">紹介店舗</th>
                 <th scope="col" className="px-4 py-3.5">商品・獲得内容</th>
-                <th scope="col" className="px-4 py-3.5 text-right">売上見込</th>
+                {canViewSales && <th scope="col" className="px-4 py-3.5 text-right">売上見込</th>}
                 <th scope="col" className="px-6 py-3.5">工事日・状況</th>
               </tr>
             </thead>
@@ -154,11 +156,11 @@ export default function StaffCasesTable({
                   <td className="px-4 py-4 text-slate-600">
                     {item.productName}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-slate-900">
-                    {item.expectedSales === null
+                  {canViewSales && <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-slate-900">
+                    {item.expectedSales == null
                       ? "単価未設定"
                       : formatCurrency(item.expectedSales)}
-                  </td>
+                  </td>}
                   <td className="whitespace-nowrap px-6 py-4 text-slate-600">
                     {/^\d{4}-\d{2}-\d{2}$/.test(item.constructionSchedule)
                       ? formatDate(item.constructionSchedule)

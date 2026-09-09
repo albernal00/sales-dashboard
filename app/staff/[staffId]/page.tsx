@@ -20,6 +20,7 @@ import {
   getTokyoToday,
   resolveTargetMonth,
 } from "@/lib/month";
+import { assertPageStaffDetailAccess, requirePageUser } from "@/lib/auth";
 
 type StaffDetailPageProps = {
   params: Promise<{ staffId: string }>;
@@ -31,6 +32,9 @@ export default async function StaffDetailPage({
   searchParams,
 }: StaffDetailPageProps) {
   const [{ staffId }, query] = await Promise.all([params, searchParams]);
+  const currentUser = await requirePageUser();
+  assertPageStaffDetailAccess(currentUser, staffId);
+  const canViewSales = currentUser.role === "admin";
   const currentMonth = getTokyoCurrentMonth();
   const requestedMonth = resolveTargetMonth(query.month, currentMonth);
   const dashboardData = await getDashboardData(requestedMonth);
@@ -38,11 +42,23 @@ export default async function StaffDetailPage({
     staffId,
     dashboardData.staff,
     dashboardData.stores,
-    dashboardData.rewards,
-    dashboardData.cases,
+    canViewSales ? dashboardData.rewards : [],
+    canViewSales
+      ? dashboardData.cases
+      : dashboardData.cases.map((item) => ({
+          id: item.id,
+          storeId: item.storeId,
+          staffId: item.staffId,
+          applicationDate: item.applicationDate,
+          productName: item.productName,
+          constructionDate: item.constructionDate,
+          constructionDateNote: item.constructionDateNote,
+          estimatedSales: null,
+        })),
     dashboardData.appointments,
     dashboardData.targetMonth,
-    dashboardData.targetDataAvailable
+    dashboardData.targetDataAvailable,
+    canViewSales
   );
 
   if (!detail) notFound();
@@ -67,6 +83,7 @@ export default async function StaffDetailPage({
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}
           monthOptions={monthOptions}
+          currentUser={{ name: currentUser.name, role: currentUser.role }}
         />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -118,13 +135,13 @@ export default async function StaffDetailPage({
                 icon={ChartNoAxesCombined}
                 tone="blue"
               />
-              <KpiCard
+              {canViewSales && <KpiCard
                 title="売上見込合計"
                 value={formatCurrency(detail.expectedSales)}
                 subtext="キャンセル以外の案件単価合計"
                 icon={BadgeJapaneseYen}
                 tone="emerald"
-              />
+              />}
               <KpiCard
                 title="担当店舗目標"
                 value={detail.targetRegistered ? formatCount(detail.target) : "未登録"}
@@ -158,9 +175,19 @@ export default async function StaffDetailPage({
 
             <div className="mt-5">
               <StaffCasesTable
-                cases={detail.cases}
+                cases={canViewSales
+                  ? detail.cases
+                  : detail.cases.map((item) => ({
+                      key: item.key,
+                      caseNumber: item.caseNumber,
+                      applicationDate: item.applicationDate,
+                      storeName: item.storeName,
+                      productName: item.productName,
+                      constructionSchedule: item.constructionSchedule,
+                    }))}
                 caseCountMatches={detail.caseCountMatches}
                 salesTotalMatches={detail.salesTotalMatches}
+                canViewSales={canViewSales}
               />
             </div>
           </div>

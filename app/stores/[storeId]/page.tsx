@@ -20,6 +20,7 @@ import {
   resolveTargetMonth,
 } from "@/lib/month";
 import type { StoreGoalStatus } from "@/types/dashboard";
+import { requirePageUser } from "@/lib/auth";
 
 type StoreDetailPageProps = {
   params: Promise<{ storeId: string }>;
@@ -53,6 +54,7 @@ export default async function StoreDetailPage({
   searchParams,
 }: StoreDetailPageProps) {
   const [{ storeId }, query] = await Promise.all([params, searchParams]);
+  const currentUser = await requirePageUser();
   const currentMonth = getTokyoCurrentMonth();
   const requestedMonth = resolveTargetMonth(query.month, currentMonth);
   const dashboardData = await getDashboardData(requestedMonth);
@@ -60,8 +62,14 @@ export default async function StoreDetailPage({
     storeId,
     dashboardData.stores,
     dashboardData.staff,
-    dashboardData.cases,
-    dashboardData.appointments,
+    currentUser.role === "admin"
+      ? dashboardData.cases
+      : dashboardData.cases.filter((item) => item.staffId === currentUser.staffId),
+    currentUser.role === "admin"
+      ? dashboardData.appointments
+      : dashboardData.appointments.filter(
+          (appointment) => appointment.staffId === currentUser.staffId
+        ),
     dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );
@@ -99,6 +107,7 @@ export default async function StoreDetailPage({
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}
           monthOptions={monthOptions}
+          currentUser={{ name: currentUser.name, role: currentUser.role }}
         />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -205,7 +214,7 @@ export default async function StoreDetailPage({
                 <div className="mt-5">
                   <StoreCasesTable
                     cases={detail.cases}
-                    caseCountMatches={detail.caseCountMatches}
+                    caseCountMatches={currentUser.role === "admin" ? detail.caseCountMatches : true}
                   />
                 </div>
               </>

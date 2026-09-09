@@ -8,12 +8,16 @@ import {
   getTokyoCurrentMonth,
   resolveTargetMonth,
 } from "@/lib/month";
+import { requirePageUser } from "@/lib/auth";
+import type { StaffTableRow } from "@/types/dashboard";
 
 type StaffPageProps = {
   searchParams: Promise<{ month?: string | string[] }>;
 };
 
 export default async function StaffPage({ searchParams }: StaffPageProps) {
+  const currentUser = await requirePageUser();
+  const canViewSales = currentUser.role === "admin";
   const currentMonth = getTokyoCurrentMonth();
   const query = await searchParams;
   const requestedMonth = resolveTargetMonth(query.month, currentMonth);
@@ -22,14 +26,23 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
     currentMonth,
     dashboardData.targetMonth
   );
-  const staff = createStaffListRows(
+  const staffRows = createStaffListRows(
     dashboardData.staff,
     dashboardData.stores,
-    dashboardData.rewards,
+    canViewSales ? dashboardData.rewards : [],
     dashboardData.appointments,
     dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );
+  const staff: StaffTableRow[] = canViewSales
+    ? staffRows
+    : staffRows.map(({ staffId, key, name, personalActual, prospectCount }) => ({
+        staffId,
+        key,
+        name,
+        personalActual,
+        prospectCount,
+      }));
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
@@ -44,6 +57,7 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}
           monthOptions={monthOptions}
+          currentUser={{ name: currentUser.name, role: currentUser.role }}
         />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -61,6 +75,8 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
             <StaffTable
               staff={staff}
               targetMonth={dashboardData.targetMonth}
+              canViewSales={canViewSales}
+              viewerStaffId={currentUser.staffId}
             />
           </div>
         </main>

@@ -4,7 +4,9 @@ import {
 } from "lucide-react";
 import MobileSidebar from "./MobileSidebar";
 import DashboardControls from "./DashboardControls";
+import LogoutButton from "./LogoutButton";
 import { formatUpdatedAt } from "@/lib/formatters";
+import type { DashboardRole } from "@/lib/auth-users";
 
 type HeaderProps = {
   pathname: string;
@@ -15,6 +17,10 @@ type HeaderProps = {
   updatedAt: string;
   isFallback: boolean;
   monthOptions: string[];
+  currentUser: {
+    name: string;
+    role: DashboardRole;
+  };
 };
 
 export default function Header({
@@ -26,6 +32,7 @@ export default function Header({
   updatedAt,
   isFallback,
   monthOptions,
+  currentUser,
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
@@ -71,15 +78,16 @@ export default function Header({
 
           <div className="hidden text-left md:block">
             <p className="text-xs font-semibold text-slate-800">
-              ユーザー
+              {currentUser.name}
             </p>
 
             <p className="text-[10px] text-slate-400">
-              管理者
+              {currentUser.role === "admin" ? "管理者" : "担当者"}
             </p>
           </div>
           <ChevronDown size={14} className="hidden text-slate-400 md:block" aria-hidden="true" />
         </button>
+        <LogoutButton />
       </div>
       </div>
     </header>

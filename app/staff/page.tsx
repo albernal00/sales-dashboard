@@ -9,6 +9,7 @@ import {
   resolveTargetMonth,
 } from "@/lib/month";
 import { requirePageUser } from "@/lib/auth";
+import { createStaffStbMetrics } from "@/lib/stb-metrics";
 import type { StaffTableRow } from "@/types/dashboard";
 
 type StaffPageProps = {
@@ -34,14 +35,21 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
     dashboardData.targetMonth,
     dashboardData.targetDataAvailable
   );
+  const stbMetrics = createStaffStbMetrics(dashboardData.stb, dashboardData.staff);
   const staff: StaffTableRow[] = canViewSales
-    ? staffRows
+    ? staffRows.map((person) => ({
+        ...person,
+        stbAttachmentCount: stbMetrics.get(person.staffId)?.attachmentCount ?? null,
+        stbAttachmentRate: stbMetrics.get(person.staffId)?.attachmentRate ?? null,
+      }))
     : staffRows.map(({ staffId, key, name, personalActual, prospectCount }) => ({
         staffId,
         key,
         name,
         personalActual,
         prospectCount,
+        stbAttachmentCount: stbMetrics.get(staffId)?.attachmentCount ?? null,
+        stbAttachmentRate: stbMetrics.get(staffId)?.attachmentRate ?? null,
       }));
 
   return (
@@ -52,7 +60,7 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
         <Header
           pathname="/staff"
           title="担当者別実績"
-          description="担当店舗の進捗と個人の獲得実績を確認できます"
+          description="個人の獲得件数と、その案件に対するSTB添付件数・率を確認できます"
           targetMonth={dashboardData.targetMonth}
           updatedAt={dashboardData.updatedAt}
           isFallback={dashboardData.isFallback}

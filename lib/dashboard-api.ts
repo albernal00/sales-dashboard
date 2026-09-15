@@ -13,6 +13,7 @@ import type {
   Staff,
   StbCheckCandidate,
   StbDashboard,
+  StbStaffSummary,
   StorePerformance,
 } from "@/types/dashboard";
 
@@ -445,6 +446,7 @@ function normalizeStb(value: unknown, targetMonth: string): StbDashboard | null 
   const twoMonthChecks = normalizeStbCandidates(value.twoMonthChecks, "stb_two_month", targetMonth, 2);
   const twelveMonthChecks = normalizeStbCandidates(value.twelveMonthChecks, "stb_twelve_month", targetMonth, 12);
   const dateNeedsReview = normalizeStbCandidates(value.dateNeedsReview, "stb_date_review", targetMonth);
+  let byStaff = normalizeStbStaff(value.byStaff);
 
   if (
     applicationCount === undefined ||
@@ -462,14 +464,53 @@ function normalizeStb(value: unknown, targetMonth: string): StbDashboard | null 
     return null;
   }
 
+  if (byStaff && (
+    byStaff.reduce((sum, item) => sum + item.applicationCount, 0) > applicationCount ||
+    byStaff.reduce((sum, item) => sum + item.stbApplicationCount, 0) > stbApplicationCount
+  )) {
+    console.warn("[dashboard-api] validation_warning", { section: "stb_by_staff", reason: "TOTALS_EXCEED_GLOBAL" });
+    byStaff = null;
+  }
+
   return {
     applicationCount,
     stbApplicationCount,
     attachmentRate: applicationCount ? stbApplicationCount / applicationCount : 0,
+    byStaff,
     twoMonthChecks,
     twelveMonthChecks,
     dateNeedsReview,
   };
+}
+
+function normalizeStbStaff(value: unknown): StbStaffSummary[] | null {
+  if (value === undefined) return null;
+  if (!Array.isArray(value)) {
+    console.warn("[dashboard-api] validation_warning", { section: "stb_by_staff", reason: "NOT_ARRAY" });
+    return null;
+  }
+
+  const seen = new Set<string>();
+  const summaries: StbStaffSummary[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) return null;
+    const staffId = getString(item, ["staffId"]);
+    const applicationCount = getNumber(item, ["applicationCount"]);
+    const stbApplicationCount = getNumber(item, ["stbApplicationCount"]);
+    if (
+      !staffId || seen.has(staffId) ||
+      applicationCount === undefined || stbApplicationCount === undefined ||
+      !Number.isInteger(applicationCount) || !Number.isInteger(stbApplicationCount) ||
+      applicationCount < 0 || stbApplicationCount < 0 ||
+      stbApplicationCount > applicationCount
+    ) {
+      console.warn("[dashboard-api] validation_warning", { section: "stb_by_staff", reason: "INVALID_ROW" });
+      return null;
+    }
+    seen.add(staffId);
+    summaries.push({ staffId, applicationCount, stbApplicationCount });
+  }
+  return summaries;
 }
 
 function normalizeResponse(value: unknown, requestedMonth: string): DashboardData {

@@ -153,7 +153,7 @@ export default function StaffTable({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className={`w-full text-sm ${canViewSales ? "min-w-[1400px]" : "min-w-[560px]"}`}>
+          <table className={`w-full text-sm ${canViewSales ? "min-w-[1600px]" : "min-w-[760px]"}`}>
             <thead className="bg-slate-50/80">
               <tr className="border-b border-slate-200 text-left text-[11px] font-semibold text-slate-500">
                 <th scope="col" className="px-6 py-3.5">担当者名</th>
@@ -164,6 +164,8 @@ export default function StaffTable({
                 {canViewSales && <th scope="col" className="px-4 py-3.5 text-right">残数</th>}
                 {canViewSales && <th scope="col" className="min-w-48 px-4 py-3.5">店舗進捗率</th>}
                 <th scope="col" className="px-4 py-3.5 text-right">個人獲得件数</th>
+                <th scope="col" className="px-4 py-3.5 text-right">STB添付件数</th>
+                <th scope="col" className="px-4 py-3.5 text-right">STB添付率</th>
                 <th scope="col" className="px-4 py-3.5 text-right">見込み件数</th>
                 {canViewSales && <th scope="col" className="px-6 py-3.5 text-right">売上見込</th>}
               </tr>
@@ -258,6 +260,16 @@ export default function StaffTable({
                   </td>}
                   <td className="px-4 py-4 text-right font-bold tabular-nums text-blue-700">
                     {formatCount(person.personalActual)}
+                  </td>
+                  <td className="px-4 py-4 text-right font-semibold tabular-nums text-slate-700">
+                    {person.stbAttachmentCount === null ? "未取得" : formatCount(person.stbAttachmentCount)}
+                  </td>
+                  <td className="px-4 py-4 text-right font-semibold tabular-nums text-emerald-700">
+                    {person.stbAttachmentCount === null
+                      ? "未取得"
+                      : person.stbAttachmentRate === null
+                        ? "算出不可"
+                        : formatPercent(person.stbAttachmentRate * 100)}
                   </td>
                   <td className="px-4 py-4 text-right font-semibold tabular-nums text-violet-700">
                     {formatCount(person.prospectCount)}

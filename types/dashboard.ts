@@ -62,9 +62,16 @@ export type StbDashboard = {
   applicationCount: number;
   stbApplicationCount: number;
   attachmentRate: number;
+  byStaff: StbStaffSummary[] | null;
   twoMonthChecks: StbCheckCandidate[];
   twelveMonthChecks: StbCheckCandidate[];
   dateNeedsReview: StbCheckCandidate[];
+};
+
+export type StbStaffSummary = {
+  staffId: string;
+  applicationCount: number;
+  stbApplicationCount: number;
 };
 
 export type AppointmentRow = {
@@ -143,7 +150,10 @@ export type StaffListRow = {
 export type StaffTableRow = Pick<
   StaffListRow,
   "staffId" | "key" | "name" | "personalActual" | "prospectCount"
-> & Partial<Omit<StaffListRow, "staffId" | "key" | "name" | "personalActual" | "prospectCount">>;
+> & Partial<Omit<StaffListRow, "staffId" | "key" | "name" | "personalActual" | "prospectCount">> & {
+  stbAttachmentCount: number | null;
+  stbAttachmentRate: number | null;
+};
 
 export type StaffCaseRow = {
   key: string;

@@ -3,7 +3,7 @@ import Sidebar from "../components/Sidebar";
 import StoreProgress from "../components/StoreProgress";
 import StaffRanking from "../components/StaffRanking";
 import Header from "../components/Header";
-import { BadgeJapaneseYen, ChartNoAxesCombined, Target, Trophy } from "lucide-react";
+import { BadgeJapaneseYen, ChartNoAxesCombined, Target, Trophy, Tv } from "lucide-react";
 import { getDashboardData } from "@/lib/dashboard-api";
 import {
   calculateDashboardKpis,
@@ -82,7 +82,7 @@ export default async function Home({ searchParams }: HomeProps) {
               この月の目標データは登録されていません
             </div>
           )}
-          <div className={`grid gap-4 sm:grid-cols-2 ${canViewSales ? "2xl:grid-cols-4" : "2xl:grid-cols-3"}`}>
+          <div className={`grid gap-4 sm:grid-cols-2 ${canViewSales ? "2xl:grid-cols-5" : "2xl:grid-cols-4"}`}>
             <KpiCard
               title="今月実績"
               value={formatCount(kpis.actual)}
@@ -105,6 +105,20 @@ export default async function Home({ searchParams }: HomeProps) {
               subtext="今月目標"
               icon={Trophy}
               tone="amber"
+            />
+
+            <KpiCard
+              title="全体STB添付率"
+              value={dashboardData.stb
+                ? dashboardData.stb.applicationCount
+                  ? formatPercent(dashboardData.stb.attachmentRate * 100)
+                  : "算出不可"
+                : "未取得"}
+              subtext={dashboardData.stb
+                ? `STB添付 ${formatCount(dashboardData.stb.stbApplicationCount)} ／ 申込 ${formatCount(dashboardData.stb.applicationCount)}`
+                : "STBデータ未取得"}
+              icon={Tv}
+              tone="emerald"
             />
 
             {canViewSales && (

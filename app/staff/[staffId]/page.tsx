@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BadgeJapaneseYen, CalendarClock, ChartNoAxesCombined, Target, Trophy } from "lucide-react";
+import { ArrowLeft, BadgeJapaneseYen, CalendarClock, ChartNoAxesCombined, Target, Trophy, Tv } from "lucide-react";
 import AppointmentsTable from "@/components/AppointmentsTable";
 import Header from "@/components/Header";
 import KpiCard from "@/components/KpiCard";
@@ -21,6 +21,7 @@ import {
   resolveTargetMonth,
 } from "@/lib/month";
 import { assertPageStaffDetailAccess, requirePageUser } from "@/lib/auth";
+import { createStaffStbMetrics } from "@/lib/stb-metrics";
 
 type StaffDetailPageProps = {
   params: Promise<{ staffId: string }>;
@@ -62,6 +63,8 @@ export default async function StaffDetailPage({
   );
 
   if (!detail) notFound();
+
+  const stbMetrics = createStaffStbMetrics(dashboardData.stb, dashboardData.staff).get(staffId);
 
   const monthOptions = createMonthOptions(
     currentMonth,
@@ -127,13 +130,26 @@ export default async function StaffDetailPage({
               </div>
             </section>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <KpiCard
                 title="個人獲得件数"
                 value={formatCount(detail.personalActual)}
                 subtext="本人が受付担当者となった件数"
                 icon={ChartNoAxesCombined}
                 tone="blue"
+              />
+              <KpiCard
+                title="STB添付件数・率"
+                value={stbMetrics?.attachmentCount === undefined || stbMetrics.attachmentCount === null
+                  ? "未取得"
+                  : formatCount(stbMetrics.attachmentCount)}
+                subtext={stbMetrics?.attachmentCount === undefined || stbMetrics.attachmentCount === null
+                  ? "STBデータ未取得"
+                  : stbMetrics.attachmentRate === null
+                    ? "添付率は算出不可"
+                    : `個人獲得案件に対する添付率 ${formatPercent(stbMetrics.attachmentRate * 100)}`}
+                icon={Tv}
+                tone="emerald"
               />
               {canViewSales && <KpiCard
                 title="売上見込合計"

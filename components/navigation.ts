@@ -14,6 +14,6 @@ export const menuItems = [
   { name: "担当者別実績", icon: Users, href: "/staff", available: true },
   { name: "アポイント予定", icon: CalendarClock, href: "/appointments", available: true },
   { name: "案件・報酬管理", icon: ClipboardList, href: null, available: false },
-  { name: "STB管理", icon: Tv, href: null, available: false },
+  { name: "STB管理", icon: Tv, href: "/stb", available: true },
   { name: "マスタ・設定", icon: Settings, href: null, available: false },
 ];

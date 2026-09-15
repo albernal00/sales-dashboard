@@ -48,6 +48,25 @@ export type Appointment = {
   locationType?: string;
 };
 
+export type StbCheckCandidate = {
+  id: string;
+  storeId: string | null;
+  staffId: string | null;
+  applicationDate: string | null;
+  constructionDate: string | null;
+  dueDate?: string;
+  milestoneMonths?: 2 | 12;
+};
+
+export type StbDashboard = {
+  applicationCount: number;
+  stbApplicationCount: number;
+  attachmentRate: number;
+  twoMonthChecks: StbCheckCandidate[];
+  twelveMonthChecks: StbCheckCandidate[];
+  dateNeedsReview: StbCheckCandidate[];
+};
+
 export type AppointmentRow = {
   key: string;
   scheduledDate?: string;
@@ -166,6 +185,7 @@ export type GasDashboardResponse = {
   rewards: unknown[] | Record<string, unknown>;
   cases: unknown;
   appointments?: unknown;
+  stb?: unknown;
   warnings: unknown[];
   sourceHealth: unknown;
   updatedAt: string;
@@ -179,6 +199,7 @@ export type DashboardData = {
   rewards: Reward[];
   cases: SafeCase[];
   appointments: Appointment[];
+  stb: StbDashboard | null;
   warnings: string[];
   sourceHealth: unknown;
   updatedAt: string;

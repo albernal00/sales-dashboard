@@ -11,6 +11,8 @@ import type {
   Reward,
   SafeCase,
   Staff,
+  StbCheckCandidate,
+  StbDashboard,
   StorePerformance,
 } from "@/types/dashboard";
 
@@ -392,6 +394,84 @@ function normalizeAppointments(value: unknown): Appointment[] {
   return appointments;
 }
 
+const ISO_DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/;
+
+function getIsoDate(record: UnknownRecord, key: string): string | null {
+  const value = record[key];
+  return typeof value === "string" && ISO_DATE_PATTERN.test(value) ? value : null;
+}
+
+function normalizeStbCandidates(
+  value: unknown,
+  section: string,
+  targetMonth: string,
+  milestoneMonths?: 2 | 12
+): StbCheckCandidate[] | null {
+  if (!Array.isArray(value)) return null;
+
+  const candidates = value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+    const id = getString(item, ["id"]);
+    const dueDate = getIsoDate(item, "dueDate");
+    if (!id || (milestoneMonths && (!dueDate || !dueDate.startsWith(targetMonth)))) {
+      return [];
+    }
+    if (milestoneMonths && item.milestoneMonths !== milestoneMonths) return [];
+
+    return [{
+      id,
+      storeId: getString(item, ["storeId"]) ?? null,
+      staffId: getString(item, ["staffId"]) ?? null,
+      applicationDate: getIsoDate(item, "applicationDate"),
+      constructionDate: getIsoDate(item, "constructionDate"),
+      ...(milestoneMonths ? { dueDate: dueDate!, milestoneMonths } : {}),
+    }];
+  });
+
+  logValidationResult(section, value.length, candidates.length);
+  if (value.length !== candidates.length) return null;
+  return candidates;
+}
+
+function normalizeStb(value: unknown, targetMonth: string): StbDashboard | null {
+  if (value === undefined) return null;
+  if (!isRecord(value)) {
+    console.warn("[dashboard-api] validation_warning", { section: "stb", reason: "STB_NOT_OBJECT" });
+    return null;
+  }
+
+  const applicationCount = getNumber(value, ["applicationCount"]);
+  const stbApplicationCount = getNumber(value, ["stbApplicationCount"]);
+  const twoMonthChecks = normalizeStbCandidates(value.twoMonthChecks, "stb_two_month", targetMonth, 2);
+  const twelveMonthChecks = normalizeStbCandidates(value.twelveMonthChecks, "stb_twelve_month", targetMonth, 12);
+  const dateNeedsReview = normalizeStbCandidates(value.dateNeedsReview, "stb_date_review", targetMonth);
+
+  if (
+    applicationCount === undefined ||
+    stbApplicationCount === undefined ||
+    !Number.isInteger(applicationCount) ||
+    !Number.isInteger(stbApplicationCount) ||
+    applicationCount < 0 ||
+    stbApplicationCount < 0 ||
+    stbApplicationCount > applicationCount ||
+    !twoMonthChecks ||
+    !twelveMonthChecks ||
+    !dateNeedsReview
+  ) {
+    console.warn("[dashboard-api] validation_warning", { section: "stb", reason: "STB_INVALID" });
+    return null;
+  }
+
+  return {
+    applicationCount,
+    stbApplicationCount,
+    attachmentRate: applicationCount ? stbApplicationCount / applicationCount : 0,
+    twoMonthChecks,
+    twelveMonthChecks,
+    dateNeedsReview,
+  };
+}
+
 function normalizeResponse(value: unknown, requestedMonth: string): DashboardData {
   if (!isRecord(value)) throw new DashboardApiError("RESPONSE_NOT_OBJECT");
 
@@ -420,6 +500,7 @@ function normalizeResponse(value: unknown, requestedMonth: string): DashboardDat
     rewards: normalizeRewards(response.rewards),
     cases: normalizeCases(response.cases),
     appointments: normalizeAppointments(response.appointments),
+    stb: normalizeStb(response.stb, requestedMonth),
     warnings: Array.isArray(response.warnings)
       ? response.warnings.filter((warning): warning is string => typeof warning === "string")
       : [],
@@ -439,6 +520,7 @@ function getFallbackData(targetMonth: string): DashboardData {
     rewards: fallbackRewards,
     cases: [],
     appointments: [],
+    stb: null,
     warnings: ["GAS APIからデータを取得できませんでした。"],
     sourceHealth: null,
     updatedAt: FALLBACK_UPDATED_AT,

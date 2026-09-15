@@ -36,5 +36,6 @@ export const config = {
     "/stores/:path*",
     "/staff/:path*",
     "/appointments/:path*",
+    "/stb/:path*",
   ],
 };

@@ -3,9 +3,9 @@ import Header from "@/components/Header";
 import KpiCard from "@/components/KpiCard";
 import Sidebar from "@/components/Sidebar";
 import { requirePageUser } from "@/lib/auth";
-import { getDashboardData } from "@/lib/dashboard-api";
+import { getStbViewData } from "@/lib/dashboard-api";
 import { formatCount, formatDate, formatPercent, formatTargetMonth } from "@/lib/formatters";
-import { createMonthOptions, getTokyoCurrentMonth, resolveTargetMonth } from "@/lib/month";
+import { createStbMonthOptions, getTokyoCurrentMonth, resolveStbTargetMonth } from "@/lib/month";
 import type { StbCheckCandidate } from "@/types/dashboard";
 
 type StbPageProps = {
@@ -76,51 +76,52 @@ export default async function StbPage({ searchParams }: StbPageProps) {
   const currentUser = await requirePageUser();
   const currentMonth = getTokyoCurrentMonth();
   const query = await searchParams;
-  const requestedMonth = resolveTargetMonth(query.month, currentMonth);
-  const dashboardData = await getDashboardData(requestedMonth);
-  const monthOptions = createMonthOptions(currentMonth, dashboardData.targetMonth);
-  const stb = dashboardData.stb;
+  const requestedMonth = resolveStbTargetMonth(query.month, currentMonth);
+  const stbView = await getStbViewData(requestedMonth);
+  const monthOptions = createStbMonthOptions(currentMonth, requestedMonth);
+  const stb = stbView?.stb ?? null;
   const scope = (items: StbCheckCandidate[]) =>
     currentUser.role === "admin"
       ? items
       : items.filter((item) => item.staffId === currentUser.staffId);
-  const storeNames = new Map(dashboardData.stores.map((store) => [store.id, store.name]));
-  const staffNames = new Map(dashboardData.staff.map((person) => [person.id, person.name]));
+  const storeNames = stbView?.stores ?? new Map<string, string>();
+  const staffNames = stbView?.staff ?? new Map<string, string>();
   const twoMonthChecks = stb ? scope(stb.twoMonthChecks) : [];
   const twelveMonthChecks = stb ? scope(stb.twelveMonthChecks) : [];
   const dateNeedsReview = stb ? scope(stb.dateNeedsReview) : [];
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
-      <Sidebar pathname="/stb" targetMonth={dashboardData.targetMonth} />
+      <Sidebar pathname="/stb" targetMonth={requestedMonth} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header
           pathname="/stb"
           title="STB管理"
           description="申込時の添付率と工事後の確認候補を確認できます"
-          targetMonth={dashboardData.targetMonth}
-          updatedAt={dashboardData.updatedAt}
-          isFallback={dashboardData.isFallback}
+          targetMonth={requestedMonth}
+          updatedAt={stbView?.updatedAt ?? ""}
+          isFallback={false}
           monthOptions={monthOptions}
+          monthLabel="確認予定月"
           currentUser={{ name: currentUser.name, role: currentUser.role }}
         />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1600px]">
             {!stb ? (
               <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-5 text-sm font-medium text-amber-800">
-                STBデータを取得できません。GASのSTB項目とデプロイ状況を確認してください。
+                STBの確認候補を取得できません。GASのSTB専用APIとデプロイ状況を確認してください。
               </div>
             ) : (
               <>
                 <p className="mb-4 text-sm text-slate-600">
-                  {formatTargetMonth(dashboardData.targetMonth)}の申込案件と確認予定を表示しています。
+                  {formatTargetMonth(requestedMonth)}を確認予定月として表示しています。申込件数・添付率は同じ月の申込案件を集計しています。
                   {currentUser.role === "staff" && " 確認候補は本人分のみ表示します。"}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <KpiCard title="申込案件数" value={formatCount(stb.applicationCount)} subtext="キャンセルを除く申込月の件数" icon={ClipboardCheck} tone="blue" />
-                  <KpiCard title="STB添付申込数" value={formatCount(stb.stbApplicationCount)} subtext="抽出シートZ列がSTB" icon={Tv} tone="violet" />
+                  <KpiCard title="申込案件数" value={formatCount(stb.applicationCount)} subtext="選択月の申込・キャンセル除外" icon={ClipboardCheck} tone="blue" />
+                  <KpiCard title="STB添付申込数" value={formatCount(stb.stbApplicationCount)} subtext="選択月の申込・抽出シートZ列がSTB" icon={Tv} tone="violet" />
                   <KpiCard title="STB添付率" value={stb.applicationCount ? formatPercent(stb.attachmentRate * 100) : "算出不可"} subtext="STB添付申込数 ÷ 申込案件数" icon={Tv} tone="emerald" />
-                  <KpiCard title="確認予定候補" value={formatCount(twoMonthChecks.length + twelveMonthChecks.length)} subtext="工事後2か月・12か月の候補" icon={CalendarCheck} tone="amber" />
+                  <KpiCard title="確認予定候補" value={formatCount(twoMonthChecks.length + twelveMonthChecks.length)} subtext="選択月に確認予定の2か月・12か月候補" icon={CalendarCheck} tone="amber" />
                 </div>
                 <div role="note" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
                   この一覧は継続確認の候補です。架電結果・継続状況は別ファイルで管理します。12か月後の候補は、現在の抽出範囲（1220行目以降）より前の案件が含まれないため、過去データの確認が終わるまで完全な架電リストとして使わないでください。

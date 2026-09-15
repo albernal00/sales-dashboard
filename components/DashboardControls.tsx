@@ -10,6 +10,7 @@ type DashboardControlsProps = {
   targetMonth: string;
   monthOptions: string[];
   formattedUpdatedAt: string;
+  monthLabel?: string;
 };
 
 export default function DashboardControls({
@@ -17,6 +18,7 @@ export default function DashboardControls({
   targetMonth,
   monthOptions,
   formattedUpdatedAt,
+  monthLabel = "対象月",
 }: DashboardControlsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -44,7 +46,7 @@ export default function DashboardControls({
           aria-hidden="true"
         />
 
-        <span className="sr-only">対象月</span>
+        <span className="sr-only">{monthLabel}</span>
         <select
           value={targetMonth}
           disabled={isPending}

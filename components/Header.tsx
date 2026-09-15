@@ -17,6 +17,7 @@ type HeaderProps = {
   updatedAt: string;
   isFallback: boolean;
   monthOptions: string[];
+  monthLabel?: string;
   currentUser: {
     name: string;
     role: DashboardRole;
@@ -32,6 +33,7 @@ export default function Header({
   updatedAt,
   isFallback,
   monthOptions,
+  monthLabel,
   currentUser,
 }: HeaderProps) {
   return (
@@ -62,6 +64,7 @@ export default function Header({
           pathname={controlsPathname ?? pathname}
           targetMonth={targetMonth}
           monthOptions={monthOptions}
+          monthLabel={monthLabel}
           formattedUpdatedAt={formatUpdatedAt(updatedAt)}
         />
 

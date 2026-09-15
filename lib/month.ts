@@ -48,3 +48,19 @@ export function createMonthOptions(
   if (selectedMonth < options.at(-1)!) options.push(selectedMonth);
   return options;
 }
+
+export function resolveStbTargetMonth(value: unknown, currentMonth: string): string {
+  const nextMonth = shiftMonth(currentMonth, 1);
+  if (typeof value !== "string" || !MONTH_PATTERN.test(value)) return nextMonth;
+  const earliestMonth = shiftMonth(currentMonth, -12);
+  const latestMonth = shiftMonth(currentMonth, 18);
+  return value >= earliestMonth && value <= latestMonth ? value : nextMonth;
+}
+
+export function createStbMonthOptions(currentMonth: string, selectedMonth: string): string[] {
+  const futureMonths = Array.from({ length: 18 }, (_, index) =>
+    shiftMonth(currentMonth, index + 1)
+  );
+  const pastMonths = createMonthOptions(currentMonth, selectedMonth).slice(1);
+  return [currentMonth, ...futureMonths, ...pastMonths];
+}

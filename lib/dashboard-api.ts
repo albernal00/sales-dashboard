@@ -652,3 +652,93 @@ export async function getDashboardData(targetMonth: string): Promise<DashboardDa
     return getFallbackData(targetMonth);
   }
 }
+
+export type StbViewData = {
+  targetMonth: string;
+  updatedAt: string;
+  stb: StbDashboard;
+  stores: Map<string, string>;
+  staff: Map<string, string>;
+};
+
+function normalizeStbDirectory(value: unknown): Map<string, string> | null {
+  if (!Array.isArray(value)) return null;
+  const directory = new Map<string, string>();
+  for (const item of value) {
+    if (!isRecord(item)) return null;
+    const id = getString(item, ["id"]);
+    const name = getString(item, ["name"]);
+    if (!id || !name || directory.has(id)) return null;
+    directory.set(id, name);
+  }
+  return directory;
+}
+
+function logStbUnavailable(reason: string, details: Record<string, DiagnosticValue> = {}) {
+  console.error("[stb-api] unavailable", { reason, ...details });
+}
+
+export async function getStbViewData(targetMonth: string): Promise<StbViewData | null> {
+  await connection();
+  const apiUrl = process.env.GAS_DASHBOARD_API_URL;
+  if (!apiUrl) {
+    logStbUnavailable("ENV_MISSING");
+    return null;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(apiUrl);
+    url.searchParams.set("view", "stb");
+    url.searchParams.set("month", targetMonth);
+  } catch {
+    logStbUnavailable("URL_INVALID");
+    return null;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(url, { cache: "no-store", redirect: "follow" });
+  } catch {
+    logStbUnavailable("NETWORK_ERROR");
+    return null;
+  }
+  if (!response.ok) {
+    logStbUnavailable("HTTP_ERROR", { httpStatus: response.status });
+    return null;
+  }
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    logStbUnavailable("JSON_PARSE_ERROR");
+    return null;
+  }
+
+  if (
+    !isRecord(payload) ||
+    payload.view !== "stb" ||
+    (payload.status !== "ok" && payload.status !== "success" && payload.status !== "warning") ||
+    payload.targetMonth !== targetMonth
+  ) {
+    logStbUnavailable("RESPONSE_INVALID");
+    return null;
+  }
+
+  const stb = normalizeStb(payload.stb, targetMonth);
+  const stores = normalizeStbDirectory(payload.stores);
+  const staff = normalizeStbDirectory(payload.staff);
+  if (!stb || !stores || !staff) {
+    logStbUnavailable("DATA_INVALID");
+    return null;
+  }
+
+  return {
+    targetMonth,
+    updatedAt: typeof payload.updatedAt === "string" ? payload.updatedAt : "",
+    stb,
+    stores,
+    staff,
+  };
+}

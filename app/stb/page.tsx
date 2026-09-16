@@ -43,12 +43,13 @@ function CheckTable({
         <p className="px-6 py-12 text-center text-sm text-slate-500">該当する候補はありません</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-sm">
+          <table className="w-full min-w-[860px] text-sm">
             <thead className="bg-slate-50/80">
               <tr className="border-b border-slate-200 text-left text-[11px] font-semibold text-slate-500">
                 {dueDateColumn && <th scope="col" className="px-6 py-3.5">確認予定日</th>}
                 <th scope="col" className="px-4 py-3.5">工事日</th>
                 <th scope="col" className="px-4 py-3.5">申込日</th>
+                <th scope="col" className="px-4 py-3.5">お客様ID</th>
                 <th scope="col" className="px-4 py-3.5">店舗</th>
                 <th scope="col" className="px-4 py-3.5">受付担当者</th>
                 <th scope="col" className="px-6 py-3.5">識別番号</th>
@@ -60,6 +61,7 @@ function CheckTable({
                   {dueDateColumn && <th scope="row" className="whitespace-nowrap px-6 py-4 text-left font-semibold text-slate-800">{item.dueDate ? formatDate(item.dueDate) : "日付不明"}</th>}
                   <td className="whitespace-nowrap px-4 py-4 text-slate-700">{item.constructionDate ? formatDate(item.constructionDate) : "未入力"}</td>
                   <td className="whitespace-nowrap px-4 py-4 text-slate-700">{item.applicationDate ? formatDate(item.applicationDate) : "不明"}</td>
+                  <td className="whitespace-nowrap px-4 py-4 font-mono text-sm font-semibold text-slate-800">{item.customerId ?? "未取得"}</td>
                   <td className="px-4 py-4 text-slate-700">{item.storeId ? stores.get(item.storeId) ?? "店舗不明" : "店舗不明"}</td>
                   <td className="px-4 py-4 text-slate-700">{item.staffId ? staff.get(item.staffId) ?? "担当者不明" : "担当者不明"}</td>
                   <td className="whitespace-nowrap px-6 py-4 font-mono text-xs text-slate-500">{item.id}</td>

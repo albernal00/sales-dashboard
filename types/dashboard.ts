@@ -50,6 +50,7 @@ export type Appointment = {
 
 export type StbCheckCandidate = {
   id: string;
+  customerId: string | null;
   storeId: string | null;
   staffId: string | null;
   applicationDate: string | null;

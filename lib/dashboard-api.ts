@@ -421,6 +421,7 @@ function normalizeStbCandidates(
 
     return [{
       id,
+      customerId: getString(item, ["customerId"]) ?? null,
       storeId: getString(item, ["storeId"]) ?? null,
       staffId: getString(item, ["staffId"]) ?? null,
       applicationDate: getIsoDate(item, "applicationDate"),

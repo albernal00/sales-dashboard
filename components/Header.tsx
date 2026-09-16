@@ -18,6 +18,9 @@ type HeaderProps = {
   isFallback: boolean;
   monthOptions: string[];
   monthLabel?: string;
+  showMonthStepper?: boolean;
+  currentMonth?: string;
+  selectedStaffId?: string | null;
   currentUser: {
     name: string;
     role: DashboardRole;
@@ -34,6 +37,9 @@ export default function Header({
   isFallback,
   monthOptions,
   monthLabel,
+  showMonthStepper,
+  currentMonth,
+  selectedStaffId,
   currentUser,
 }: HeaderProps) {
   return (
@@ -65,6 +71,9 @@ export default function Header({
           targetMonth={targetMonth}
           monthOptions={monthOptions}
           monthLabel={monthLabel}
+          showMonthStepper={showMonthStepper}
+          currentMonth={currentMonth}
+          selectedStaffId={selectedStaffId}
           formattedUpdatedAt={formatUpdatedAt(updatedAt)}
         />
 

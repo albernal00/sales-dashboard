@@ -2,6 +2,7 @@ import { CalendarCheck, ClipboardCheck, Tv } from "lucide-react";
 import Header from "@/components/Header";
 import KpiCard from "@/components/KpiCard";
 import Sidebar from "@/components/Sidebar";
+import StbStaffFilter from "@/components/StbStaffFilter";
 import { requirePageUser } from "@/lib/auth";
 import { getStbViewData } from "@/lib/dashboard-api";
 import { formatCount, formatDate, formatPercent, formatTargetMonth } from "@/lib/formatters";
@@ -9,7 +10,7 @@ import { createStbMonthOptions, getTokyoCurrentMonth, resolveStbTargetMonth } fr
 import type { StbCheckCandidate } from "@/types/dashboard";
 
 type StbPageProps = {
-  searchParams: Promise<{ month?: string | string[] }>;
+  searchParams: Promise<{ month?: string | string[]; staff?: string | string[] }>;
 };
 
 function CheckTable({
@@ -80,15 +81,40 @@ export default async function StbPage({ searchParams }: StbPageProps) {
   const stbView = await getStbViewData(requestedMonth);
   const monthOptions = createStbMonthOptions(currentMonth, requestedMonth);
   const stb = stbView?.stb ?? null;
-  const scope = (items: StbCheckCandidate[]) =>
-    currentUser.role === "admin"
-      ? items
-      : items.filter((item) => item.staffId === currentUser.staffId);
-  const storeNames = stbView?.stores ?? new Map<string, string>();
   const staffNames = stbView?.staff ?? new Map<string, string>();
+  const selectedStaffId = currentUser.role === "admin" &&
+    typeof query.staff === "string" && staffNames.has(query.staff)
+      ? query.staff
+      : null;
+  const visibleStaffId = currentUser.role === "admin"
+    ? selectedStaffId
+    : currentUser.staffId ?? null;
+  const scope = (items: StbCheckCandidate[]) =>
+    currentUser.role === "staff"
+      ? items.filter((item) => item.staffId === currentUser.staffId)
+      : visibleStaffId
+      ? items.filter((item) => item.staffId === visibleStaffId)
+      : items;
+  const storeNames = stbView?.stores ?? new Map<string, string>();
   const twoMonthChecks = stb ? scope(stb.twoMonthChecks) : [];
   const twelveMonthChecks = stb ? scope(stb.twelveMonthChecks) : [];
   const dateNeedsReview = stb ? scope(stb.dateNeedsReview) : [];
+  const staffSummary = visibleStaffId && stb?.byStaff
+    ? stb.byStaff.find((item) => item.staffId === visibleStaffId)
+    : null;
+  const applicationCount = stb
+    ? visibleStaffId
+      ? stb.byStaff ? staffSummary?.applicationCount ?? 0 : null
+      : stb.applicationCount
+    : null;
+  const stbApplicationCount = stb
+    ? visibleStaffId
+      ? stb.byStaff ? staffSummary?.stbApplicationCount ?? 0 : null
+      : stb.stbApplicationCount
+    : null;
+  const scopeLabel = visibleStaffId ? staffNames.get(visibleStaffId) ?? "本人" : "全担当者";
+  const staffOptions = Array.from(staffNames, ([id, name]) => ({ id, name }))
+    .toSorted((a, b) => a.name.localeCompare(b.name, "ja"));
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
@@ -103,6 +129,9 @@ export default async function StbPage({ searchParams }: StbPageProps) {
           isFallback={false}
           monthOptions={monthOptions}
           monthLabel="確認予定月"
+          showMonthStepper
+          currentMonth={currentMonth}
+          selectedStaffId={selectedStaffId}
           currentUser={{ name: currentUser.name, role: currentUser.role }}
         />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -113,14 +142,27 @@ export default async function StbPage({ searchParams }: StbPageProps) {
               </div>
             ) : (
               <>
-                <p className="mb-4 text-sm text-slate-600">
-                  {formatTargetMonth(requestedMonth)}を確認予定月として表示しています。申込件数・添付率は同じ月の申込案件を集計しています。
-                  {currentUser.role === "staff" && " 確認候補は本人分のみ表示します。"}
-                </p>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-slate-600">
+                    {formatTargetMonth(requestedMonth)}を確認予定月として表示しています。申込件数・添付率は同じ月の申込案件を集計しています。
+                    {visibleStaffId && ` 表示対象：${scopeLabel}`}
+                  </p>
+                  {currentUser.role === "admin" && (
+                    <StbStaffFilter
+                      targetMonth={requestedMonth}
+                      selectedStaffId={selectedStaffId}
+                      staff={staffOptions}
+                    />
+                  )}
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <KpiCard title="申込案件数" value={formatCount(stb.applicationCount)} subtext="選択月の申込・キャンセル除外" icon={ClipboardCheck} tone="blue" />
-                  <KpiCard title="STB添付申込数" value={formatCount(stb.stbApplicationCount)} subtext="選択月の申込・抽出シートZ列がSTB" icon={Tv} tone="violet" />
-                  <KpiCard title="STB添付率" value={stb.applicationCount ? formatPercent(stb.attachmentRate * 100) : "算出不可"} subtext="STB添付申込数 ÷ 申込案件数" icon={Tv} tone="emerald" />
+                  <KpiCard title="申込案件数" value={applicationCount === null ? "未取得" : formatCount(applicationCount)} subtext={`${scopeLabel}・選択月の申込・キャンセル除外`} icon={ClipboardCheck} tone="blue" />
+                  <KpiCard title="STB添付申込数" value={stbApplicationCount === null ? "未取得" : formatCount(stbApplicationCount)} subtext={`${scopeLabel}・選択月の申込・抽出シートZ列がSTB`} icon={Tv} tone="violet" />
+                  <KpiCard title="STB添付率" value={applicationCount === null || stbApplicationCount === null
+                    ? "未取得"
+                    : applicationCount
+                      ? formatPercent(stbApplicationCount / applicationCount * 100)
+                      : "算出不可"} subtext="STB添付申込数 ÷ 申込案件数" icon={Tv} tone="emerald" />
                   <KpiCard title="確認予定候補" value={formatCount(twoMonthChecks.length + twelveMonthChecks.length)} subtext="選択月に確認予定の2か月・12か月候補" icon={CalendarCheck} tone="amber" />
                 </div>
                 <div role="note" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">

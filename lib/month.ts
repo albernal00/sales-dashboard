@@ -30,7 +30,7 @@ export function resolveTargetMonth(value: unknown, currentMonth: string): string
   return value <= currentMonth ? value : currentMonth;
 }
 
-function shiftMonth(value: string, offset: number): string {
+export function shiftMonth(value: string, offset: number): string {
   const [year, month] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1 + offset, 1));
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;

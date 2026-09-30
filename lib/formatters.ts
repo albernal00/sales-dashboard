@@ -5,6 +5,12 @@ export function formatCount(value: number, withUnit = true): string {
   return withUnit ? `${formatted}件` : formatted;
 }
 
+export function formatCountWithRgu(count: number, rgu: number | null): string {
+  return rgu === null
+    ? `${formatCount(count)}（RGU未取得）`
+    : `${formatCount(count)}（${numberFormatter.format(rgu)}RGU）`;
+}
+
 export function formatStoreCount(value: number): string {
   return `${numberFormatter.format(value)}店`;
 }

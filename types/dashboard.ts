@@ -2,6 +2,7 @@ export type Staff = {
   id: string;
   name: string;
   personalActual: number;
+  rgu: number | null;
 };
 
 export type StorePerformance = {
@@ -143,6 +144,7 @@ export type StaffListRow = {
   remaining: number;
   progress: number;
   personalActual: number;
+  rgu: number | null;
   expectedSales: number;
   prospectCount: number;
   targetRegistered: boolean;
@@ -200,6 +202,7 @@ export type GasDashboardResponse = {
   warnings: unknown[];
   sourceHealth: unknown;
   updatedAt: string;
+  totalRgu?: unknown;
 };
 
 export type DashboardData = {
@@ -216,4 +219,5 @@ export type DashboardData = {
   updatedAt: string;
   isFallback: boolean;
   targetDataAvailable: boolean;
+  totalRgu: number | null;
 };

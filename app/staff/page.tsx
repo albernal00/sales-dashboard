@@ -42,11 +42,12 @@ export default async function StaffPage({ searchParams }: StaffPageProps) {
         stbAttachmentCount: stbMetrics.get(person.staffId)?.attachmentCount ?? null,
         stbAttachmentRate: stbMetrics.get(person.staffId)?.attachmentRate ?? null,
       }))
-    : staffRows.map(({ staffId, key, name, personalActual, prospectCount }) => ({
+    : staffRows.map(({ staffId, key, name, personalActual, rgu, prospectCount }) => ({
         staffId,
         key,
         name,
         personalActual,
+        rgu,
         prospectCount,
         stbAttachmentCount: stbMetrics.get(staffId)?.attachmentCount ?? null,
         stbAttachmentRate: stbMetrics.get(staffId)?.attachmentRate ?? null,

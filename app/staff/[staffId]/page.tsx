@@ -10,6 +10,7 @@ import { getDashboardData } from "@/lib/dashboard-api";
 import { createStaffDetail } from "@/lib/dashboard";
 import {
   formatCount,
+  formatCountWithRgu,
   formatCurrency,
   formatPercent,
   formatTargetMonth,
@@ -133,7 +134,7 @@ export default async function StaffDetailPage({
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <KpiCard
                 title="個人獲得件数"
-                value={formatCount(detail.personalActual)}
+                value={formatCountWithRgu(detail.personalActual, detail.rgu)}
                 subtext="本人が受付担当者となった件数"
                 icon={ChartNoAxesCombined}
                 tone="blue"

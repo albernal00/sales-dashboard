@@ -314,6 +314,7 @@ export function createStaffListRows(
       remaining: calculateRemaining(actual, target),
       progress: calculateProgress(actual, target),
       personalActual: person.personalActual,
+      rgu: person.rgu,
       expectedSales: rewardTotals.get(person.id) ?? 0,
       prospectCount: prospectCounts.get(person.id) ?? 0,
       targetRegistered: targetDataAvailable,

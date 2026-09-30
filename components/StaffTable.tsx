@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, Search, Users } from "lucide-react";
 import {
   formatCount,
+  formatCountWithRgu,
   formatCurrency,
   formatPercent,
   formatStoreCount,
@@ -259,7 +260,7 @@ export default function StaffTable({
                     )}
                   </td>}
                   <td className="px-4 py-4 text-right font-bold tabular-nums text-blue-700">
-                    {formatCount(person.personalActual)}
+                    {formatCountWithRgu(person.personalActual, person.rgu ?? null)}
                   </td>
                   <td className="px-4 py-4 text-right font-semibold tabular-nums text-slate-700">
                     {person.stbAttachmentCount === null ? "未取得" : formatCount(person.stbAttachmentCount)}

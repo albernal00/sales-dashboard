@@ -145,6 +145,7 @@ function normalizeStaff(value: unknown): Staff[] {
 
     const name = getString(item, ["name", "staffName"]);
     const personalActual = getNumber(item, ["personalActual"]);
+    const rgu = getNumber(item, ["rgu"]);
     if (!name || personalActual === undefined) {
       return [];
     }
@@ -153,6 +154,7 @@ function normalizeStaff(value: unknown): Staff[] {
       id: getString(item, ["id", "staffId"]) ?? `staff-${index + 1}`,
       name,
       personalActual,
+      rgu: rgu !== undefined && rgu >= 0 ? rgu : null,
     }];
   });
 
@@ -550,6 +552,10 @@ function normalizeResponse(value: unknown, requestedMonth: string): DashboardDat
     updatedAt: typeof response.updatedAt === "string" ? response.updatedAt : "",
     isFallback: false,
     targetDataAvailable: hasTargetData(response.stores),
+    totalRgu: (() => {
+      const totalRgu = getNumber(response as UnknownRecord, ["totalRgu"]);
+      return totalRgu !== undefined && totalRgu >= 0 ? totalRgu : null;
+    })(),
   };
 }
 
@@ -568,6 +574,7 @@ function getFallbackData(targetMonth: string): DashboardData {
     updatedAt: FALLBACK_UPDATED_AT,
     isFallback: true,
     targetDataAvailable: true,
+    totalRgu: null,
   };
 }
 

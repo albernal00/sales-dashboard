@@ -13,6 +13,7 @@ import {
 } from "@/lib/dashboard";
 import {
   formatCount,
+  formatCountWithRgu,
   formatCurrency,
   formatPercent,
   formatSignedCount,
@@ -85,7 +86,7 @@ export default async function Home({ searchParams }: HomeProps) {
           <div className={`grid gap-4 sm:grid-cols-2 ${canViewSales ? "2xl:grid-cols-5" : "2xl:grid-cols-4"}`}>
             <KpiCard
               title="今月実績"
-              value={formatCount(kpis.actual)}
+              value={formatCountWithRgu(kpis.actual, dashboardData.totalRgu)}
               subtext={`先月比 ${formatSignedCount(kpis.previousMonthDifference)}`}
               icon={ChartNoAxesCombined}
               tone="blue"
